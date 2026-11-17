@@ -25,6 +25,15 @@ section{background:var(--card);border:1px solid var(--line);border-radius:12px;p
 .acc small{color:var(--mute)}
 .acc input{width:90px;padding:2px 6px;font-size:13px}
 .acc .x{float:right}
+.acc small{overflow-wrap:anywhere}
+.account-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 8px;margin-bottom:12px}
+.account-form label{grid-column:1/-1;margin:0;font-size:14px;line-height:20px}
+.account-form input,.account-form button{min-height:48px;margin:0;font-size:16px;line-height:24px}
+.account-form input{min-width:0}
+.account-form button{padding:8px 12px;color:var(--acc);border-color:var(--acc)}
+.account-form button:active{background:var(--accbg)}
+#account-msg{grid-column:1/-1;margin:0;color:var(--mute);font-size:14px;line-height:20px}
+#account-msg:empty{margin-top:-4px}
 .row{display:flex;gap:10px;flex-wrap:wrap}
 .row>label{flex:1 1 140px}
 label{display:block;margin-bottom:10px;color:var(--mute);font-size:13px}
@@ -62,8 +71,14 @@ textarea{width:100%;height:90px;margin:8px 0;background:var(--bg);color:var(--in
 <h1>总资产（所有账户合计）</h1>
 <p class="total" id="total">0.00</p>
 
-<section><h2>账户</h2><div class="accs" id="accs"></div>
-<div class="row" style="margin-top:12px"><label style="margin:0"><input id="newacc" placeholder="新账户名，如：银行卡"></label><button id="addacc" style="flex:0 0 auto">添加账户</button></div></section>
+<section><h2>账户</h2>
+<form class="account-form" id="account-form" novalidate>
+<label for="newacc">新账户名称</label>
+<input id="newacc" placeholder="如：日常银行卡" aria-describedby="account-msg" required enterkeyhint="done">
+<button id="addacc" type="submit">添加账户</button>
+<p id="account-msg" role="status"></p>
+</form>
+<div class="accs" id="accs"></div></section>
 
 <section><h2>记一笔</h2>
 <div class="seg" id="seg"><button data-t="expense" class="on">支出</button><button data-t="income">收入</button><button data-t="transfer">转账</button></div>
@@ -90,7 +105,7 @@ const INC=['工资','直播','外卖返利','其他'];
 let S=load();
 function load(){try{const r=localStorage.getItem(K);if(r){const o=JSON.parse(r);if(o&&o.accounts&&o.tx)return o}}catch(e){}
 return{accounts:[{id:'a1',name:'微信',open:0},{id:'a2',name:'余额宝',open:0},{id:'a3',name:'小荷包',open:0}],tx:[]}}
-function save(){try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}}
+function save(state=S){try{localStorage.setItem(K,JSON.stringify(state));return true}catch(e){return false}}
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fm=n=>n.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -164,7 +179,33 @@ $('#add').onclick=()=>{
  S.tx.push(t);save();month=t.date.slice(0,7);
  $('#amt').value='';$('#note').value='';msg('已记下。');render();
 };
-$('#addacc').onclick=()=>{const n=$('#newacc').value.trim();if(!n)return;S.accounts.push({id:'a'+Date.now(),name:n,open:0});$('#newacc').value='';save();render()};
+$('#account-form').addEventListener('submit',e=>{
+ e.preventDefault();
+ const field=$('#newacc');
+ const status=$('#account-msg');
+ const name=field.value.trim();
+ if(!name){
+  status.textContent='请先输入新账户名称。';
+  field.setAttribute('aria-invalid','true');
+  field.focus();
+  return;
+ }
+ field.removeAttribute('aria-invalid');
+ const id='a'+crypto.getRandomValues(new Uint32Array(2)).join('-');
+ const nextState={...S,accounts:[...S.accounts,{id,name,open:0}]};
+ if(!save(nextState)){
+  status.textContent='未能保存账户。请确认浏览器允许此网站存储数据，再试一次。';
+  return;
+ }
+ S=nextState;
+ field.value='';
+ status.textContent='已添加「'+name+'」。';
+ render();
+});
+$('#newacc').addEventListener('input',()=>{
+ $('#newacc').removeAttribute('aria-invalid');
+ $('#account-msg').textContent='';
+});
 $('#prev').onclick=()=>shift(-1);$('#next').onclick=()=>shift(1);
 function shift(d){const [y,m]=month.split('-').map(Number);const x=new Date(y,m-1+d,1);month=x.getFullYear()+'-'+p2(x.getMonth()+1);render()}
 $('#exp').onclick=()=>{$('#bk').value=JSON.stringify(S);$('#bk').select()};
