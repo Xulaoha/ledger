@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>记账本</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="记账本">
+<style>
+:root{--bg:#eef1f4;--card:#fff;--ink:#1b2733;--mute:#66737f;--line:#d9dfe5;--in:#1f7a55;--out:#c4452f;--acc:#2f5da8;--accbg:#e4ebf7;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#11161c;--card:#1a212a;--ink:#e6ebf0;--mute:#93a0ac;--line:#2b3541;--in:#4cc38a;--out:#ef7a65;--acc:#7ea6ea;--accbg:#22314a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#11161c;--card:#1a212a;--ink:#e6ebf0;--mute:#93a0ac;--line:#2b3541;--in:#4cc38a;--out:#ef7a65;--acc:#7ea6ea;--accbg:#22314a;color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "PingFang SC","Noto Sans SC","Microsoft YaHei",system-ui,sans-serif}
+main{max-width:760px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:15px;font-weight:600;color:var(--mute);margin:0 0 4px}
+h2{font-size:16px;margin:0 0 12px}
+.total{font-size:42px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin:0 0 18px}
+section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
+.accs{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.acc{border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.acc b{display:block;font-size:20px;font-variant-numeric:tabular-nums}
+.acc small{color:var(--mute)}
+.acc input{width:90px;padding:2px 6px;font-size:13px}
+.acc .x{float:right}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row>label{flex:1 1 140px}
+label{display:block;margin-bottom:10px;color:var(--mute);font-size:13px}
+input,select{display:block;width:100%;margin-top:4px;padding:9px 10px;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+button{font:inherit;color:var(--ink);background:none;border:1px solid var(--line);border-radius:8px;padding:8px 14px;cursor:pointer}
+button.primary{width:100%;background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600;padding:11px}
+.seg{display:flex;gap:6px;margin-bottom:12px}
+.seg button{flex:1}
+.seg button.on{background:var(--accbg);border-color:var(--acc);color:var(--acc);font-weight:600}
+.x{border:0;padding:0 6px;color:var(--mute)}
+.nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.nav b{font-size:17px}
+.sum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.sum div{background:var(--bg);border-radius:8px;padding:10px}
+.sum small{display:block;color:var(--mute)}
+.sum b{font-size:18px;font-variant-numeric:tabular-nums}
+.in{color:var(--in)}.out{color:var(--out)}
+.bar{display:grid;grid-template-columns:76px 1fr 96px;gap:8px;align-items:center;margin:6px 0;font-size:14px}
+.bar i{display:block;height:8px;border-radius:4px;background:var(--acc)}
+.bar.g i{background:var(--in)}
+.bar span:last-child{text-align:right;font-variant-numeric:tabular-nums}
+.day{display:flex;justify-content:space-between;color:var(--mute);font-size:13px;margin:16px 0 4px;padding-bottom:4px;border-bottom:1px solid var(--line)}
+.tx{display:flex;align-items:center;gap:10px;padding:7px 0}
+.tx .m{flex:1;min-width:0}
+.tx .m small{display:block;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tx .a{font-variant-numeric:tabular-nums;font-weight:600}
+.empty{color:var(--mute);padding:8px 0}
+textarea{width:100%;height:90px;margin:8px 0;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px;font:12px monospace}
+#msg{margin:8px 0 0;min-height:20px;color:var(--mute);font-size:13px}
+</style>
+</head>
+<body>
+<main>
+<h1>总资产（所有账户合计）</h1>
+<p class="total" id="total">0.00</p>
+
+<section><h2>账户</h2><div class="accs" id="accs"></div>
+<div class="row" style="margin-top:12px"><label style="margin:0"><input id="newacc" placeholder="新账户名，如：银行卡"></label><button id="addacc" style="flex:0 0 auto">添加账户</button></div></section>
+
+<section><h2>记一笔</h2>
+<div class="seg" id="seg"><button data-t="expense" class="on">支出</button><button data-t="income">收入</button><button data-t="transfer">转账</button></div>
+<div class="row"><label>金额<input id="amt" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00"></label><label>日期<input id="date" type="date"></label></div>
+<div class="row"><label><span id="t-acc">账户</span><select id="acc"></select></label><label id="l-to" hidden>转入账户<select id="to"></select></label><label id="l-cat"><span id="t-cat">分类</span><select id="cat"></select></label></div>
+<label>备注<input id="note" placeholder="可不填"></label>
+<button class="primary" id="add">记下</button><p id="msg"></p></section>
+
+<section><div class="nav"><button id="prev" aria-label="上个月">‹</button><b id="mlabel"></b><button id="next" aria-label="下个月">›</button></div>
+<div class="sum"><div><small>收入</small><b class="in" id="s-in"></b></div><div><small>支出</small><b class="out" id="s-out"></b></div><div><small>日均支出</small><b id="s-avg"></b></div></div>
+<div id="bars"></div>
+<div id="list"></div>
+<p class="empty" style="font-size:13px">账户之间的转账不计入收入和支出。</p></section>
+
+<section><h2>备份</h2>
+<p class="empty" style="margin:0">数据只存在这个浏览器里。换设备或清理浏览器前，先生成备份并保存好。</p>
+<textarea id="bk" aria-label="备份内容"></textarea>
+<div class="row"><button id="exp">生成备份</button><button id="imp">从上面的内容恢复</button></div></section>
+</main>
+<script>
+const K='ledger-v1';
+const EXP=['餐饮','外卖','购物','交通','娱乐','游戏','订阅','其他'];
+const INC=['工资','直播','外卖返利','其他'];
+let S=load();
+function load(){try{const r=localStorage.getItem(K);if(r){const o=JSON.parse(r);if(o&&o.accounts&&o.tx)return o}}catch(e){}
+return{accounts:[{id:'a1',name:'微信',open:0},{id:'a2',name:'余额宝',open:0},{id:'a3',name:'小荷包',open:0}],tx:[]}}
+function save(){try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}}
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fm=n=>n.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2});
+const p2=n=>String(n).padStart(2,'0');
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate())};
+let month=today().slice(0,7),type='expense';
+const accName=id=>(S.accounts.find(a=>a.id===id)||{name:'已删除账户'}).name;
+function bal(a){let b=Number(a.open)||0;for(const t of S.tx){
+ if(t.type==='income'&&t.acc===a.id)b+=t.amt;
+ else if(t.type==='expense'&&t.acc===a.id)b-=t.amt;
+ else if(t.type==='transfer'){if(t.acc===a.id)b-=t.amt;if(t.to===a.id)b+=t.amt}}return b}
+
+function fillSelects(){
+ const opts=S.accounts.map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('');
+ const keep=(el,h)=>{const v=el.value;el.innerHTML=h;if([...el.options].some(o=>o.value===v))el.value=v};
+ keep($('#acc'),opts);keep($('#to'),opts);
+ if(type!=='transfer')keep($('#cat'),(type==='income'?INC:EXP).map(c=>`<option>${c}</option>`).join(''));
+ $('#l-to').hidden=type!=='transfer';$('#l-cat').hidden=type==='transfer';
+ $('#t-acc').textContent=type==='transfer'?'转出账户':type==='income'?'收入到':'从哪个账户付';
+ $('#t-cat').textContent=type==='income'?'收入来源':'分类';
+ document.querySelectorAll('#seg button').forEach(b=>b.classList.toggle('on',b.dataset.t===type));
+}
+
+function render(){
+ let tot=0;
+ $('#accs').innerHTML=S.accounts.map(a=>{const b=bal(a);tot+=b;
+  return `<div class="acc"><button class="x" data-del-acc="${a.id}" aria-label="删除账户">×</button><small>${esc(a.name)}</small><b>${fm(b)}</b><small>起始余额 <input type="number" step="0.01" value="${Number(a.open)||0}" data-open="${a.id}" aria-label="${esc(a.name)}起始余额"></small></div>`}).join('');
+ $('#total').textContent=fm(tot);
+ fillSelects();
+
+ $('#mlabel').textContent=month.replace('-','年')+'月';
+ const mt=S.tx.filter(t=>t.date.slice(0,7)===month);
+ let inc=0,exp=0;const bi={},be={};
+ for(const t of mt){if(t.type==='income'){inc+=t.amt;bi[t.cat]=(bi[t.cat]||0)+t.amt}else if(t.type==='expense'){exp+=t.amt;be[t.cat]=(be[t.cat]||0)+t.amt}}
+ const [y,m]=month.split('-').map(Number);const t0=today();
+ const days=t0.slice(0,7)===month?Number(t0.slice(8)):new Date(y,m,0).getDate();
+ $('#s-in').textContent=fm(inc);$('#s-out').textContent=fm(exp);$('#s-avg').textContent=fm(exp/days);
+ const bars=(o,tot,cls)=>Object.entries(o).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="bar ${cls}"><span>${esc(k)}</span><i style="width:${Math.max(3,v/tot*100)}%"></i><span>${fm(v)}</span></div>`).join('');
+ $('#bars').innerHTML=(inc?'<h2>收入来源</h2>'+bars(bi,inc,'g'):'')+(exp?'<h2 style="margin-top:14px">支出分类</h2>'+bars(be,exp,''):'');
+
+ if(!mt.length){$('#list').innerHTML='<p class="empty">这个月还没有记录，在上面记第一笔。</p>';return}
+ const byDay={};mt.slice().sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id).forEach(t=>(byDay[t.date]=byDay[t.date]||[]).push(t));
+ $('#list').innerHTML=Object.entries(byDay).map(([d,arr])=>{
+  const dx=arr.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amt,0);
+  return `<div class="day"><span>${d}</span><span>${dx?'支出 '+fm(dx):''}</span></div>`+arr.map(t=>{
+   const sign=t.type==='income'?'+':t.type==='expense'?'-':'';
+   const cls=t.type==='income'?'in':t.type==='expense'?'out':'';
+   const sub=t.type==='transfer'?`转账 ${esc(accName(t.acc))} → ${esc(accName(t.to))}`:`${esc(t.cat)} · ${esc(accName(t.acc))}`;
+   return `<div class="tx"><div class="m">${esc(t.note||(t.type==='transfer'?'账户间转账':t.cat))}<small>${sub}</small></div><span class="a ${cls}">${sign}${fm(t.amt)}</span><button class="x" data-del="${t.id}" aria-label="删除这笔">×</button></div>`}).join('')}).join('');
+}
+
+document.addEventListener('click',e=>{
+ const b=e.target.closest('button');if(!b)return;
+ if(b.dataset.t){type=b.dataset.t;fillSelects();return}
+ if(b.dataset.del){S.tx=S.tx.filter(t=>String(t.id)!==b.dataset.del);save();render();return}
+ if(b.dataset.delAcc){const id=b.dataset.delAcc;
+  if(S.tx.some(t=>t.acc===id||t.to===id)){msg('这个账户已有记录，不能删除。');return}
+  if(S.accounts.length<2){msg('至少保留一个账户。');return}
+  S.accounts=S.accounts.filter(a=>a.id!==id);save();render();return}
+});
+document.addEventListener('change',e=>{
+ if(e.target.dataset.open){const a=S.accounts.find(a=>a.id===e.target.dataset.open);a.open=parseFloat(e.target.value)||0;save();render()}
+});
+function msg(t){$('#msg').textContent=t}
+$('#add').onclick=()=>{
+ const amt=Math.round(parseFloat($('#amt').value)*100)/100;
+ if(!(amt>0)){msg('请先填写金额。');return}
+ const t={id:Date.now(),date:$('#date').value||today(),type,amt,acc:$('#acc').value,note:$('#note').value.trim()};
+ if(type==='transfer'){t.to=$('#to').value;if(t.to===t.acc){msg('转出和转入不能是同一个账户。');return}}
+ else t.cat=$('#cat').value;
+ S.tx.push(t);save();month=t.date.slice(0,7);
+ $('#amt').value='';$('#note').value='';msg('已记下。');render();
+};
+$('#addacc').onclick=()=>{const n=$('#newacc').value.trim();if(!n)return;S.accounts.push({id:'a'+Date.now(),name:n,open:0});$('#newacc').value='';save();render()};
+$('#prev').onclick=()=>shift(-1);$('#next').onclick=()=>shift(1);
+function shift(d){const [y,m]=month.split('-').map(Number);const x=new Date(y,m-1+d,1);month=x.getFullYear()+'-'+p2(x.getMonth()+1);render()}
+$('#exp').onclick=()=>{$('#bk').value=JSON.stringify(S);$('#bk').select()};
+$('#imp').onclick=()=>{try{const o=JSON.parse($('#bk').value);if(!o.accounts||!o.tx)throw 0;S=o;save();render();msg('已从备份恢复。')}catch(e){msg('备份内容无法识别，请检查后再试。')}};
+$('#date').value=today();
+render();
+</script>
+</body>
+</html>
