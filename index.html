@@ -11,6 +11,8 @@
 :root {
   --bg:#eef1f4; --card:#fff; --ink:#1b2733; --mute:#66737f; --line:#d9dfe5;
   --in:#1f7a55; --out:#c4452f; --acc:#2f5da8; --accbg:#e4ebf7;
+  --chart-1:#18457e; --chart-2:#6695ce; --chart-3:#2e619f; --chart-4:#8bb0d9;
+  --chart-5:#457ab9; --chart-6:#a9c6e5; --chart-7:#254e8d; --chart-8:#567ead;
   color-scheme:light;
   padding-top:env(safe-area-inset-top, 0px);
 }
@@ -18,11 +20,15 @@
   :root:not([data-theme="light"]) {
     --bg:#11161c; --card:#1a212a; --ink:#e6ebf0; --mute:#93a0ac; --line:#2b3541;
     --in:#4cc38a; --out:#ef7a65; --acc:#7ea6ea; --accbg:#22314a; color-scheme:dark;
+    --chart-1:#b1cff9; --chart-2:#527eb9; --chart-3:#92b8ed; --chart-4:#4269a1;
+    --chart-5:#749fdf; --chart-6:#365685; --chart-7:#a1b8db; --chart-8:#6586b0;
   }
 }
 :root[data-theme="dark"] {
   --bg:#11161c; --card:#1a212a; --ink:#e6ebf0; --mute:#93a0ac; --line:#2b3541;
   --in:#4cc38a; --out:#ef7a65; --acc:#7ea6ea; --accbg:#22314a; color-scheme:dark;
+  --chart-1:#b1cff9; --chart-2:#527eb9; --chart-3:#92b8ed; --chart-4:#4269a1;
+  --chart-5:#749fdf; --chart-6:#365685; --chart-7:#a1b8db; --chart-8:#6586b0;
 }
 *, *::before, *::after { box-sizing:border-box }
 [hidden] { display:none !important }
@@ -43,6 +49,7 @@ button { color:var(--ink); background:var(--card); border:1px solid var(--line);
 :focus-visible { outline:2px solid var(--acc); outline-offset:2px }
 button.primary, .fab { background:var(--acc); color:var(--card); border-color:var(--acc); font-weight:700 }
 button.secondary { color:var(--acc); font-weight:600 }
+button:disabled { color:var(--mute); opacity:.55; cursor:default }
 button.icon { width:44px; padding:0; font-size:21px; line-height:1 }
 button.quiet { border-color:transparent; background:transparent; color:var(--mute) }
 input, textarea { width:100%; min-width:0; min-height:44px; font-size:16px; color:var(--ink); background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:8px; margin:0 }
@@ -54,8 +61,8 @@ label { display:grid; gap:4px; min-width:0 }
 .out { color:var(--out) }
 .empty, .status { color:var(--mute); font-size:14px }
 .status:not(:empty) { margin-top:6px }
-.accs, .sum, .tile-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:6px }
-.accs > *, .sum > *, .tile-grid > * { min-width:0 }
+.accs, .sum { display:grid; grid-template-columns:repeat(2,1fr); gap:6px }
+.accs > *, .sum > * { min-width:0 }
 .acc-card { display:grid; grid-template-columns:minmax(0,1fr) 44px; align-items:center; column-gap:2px; padding:3px 3px 3px 8px; border:1px solid var(--line); border-radius:8px }
 .acc-name { display:block; color:var(--mute); font-size:13px; overflow-wrap:anywhere }
 .acc-card b { display:block; font-size:17px }
@@ -65,18 +72,15 @@ label { display:grid; gap:4px; min-width:0 }
 .account-form .fields, .managed-row { grid-template-columns:minmax(0,1fr) auto; align-items:end }
 .nav { display:flex; justify-content:space-between; align-items:center; gap:8px; margin:-4px 0 4px }
 .month { text-align:center }
-.month small, .sum small, .tile small { display:block; color:var(--mute); font-size:13px }
+.month small, .sum small { display:block; color:var(--mute); font-size:13px }
+.month button { padding:2px 8px; font-weight:700 }
 .nav h2 { margin:0; line-height:1.25 }
-.sum > div, .tile { background:var(--bg); border-radius:8px; padding:5px 9px }
+.sum > div { background:var(--bg); border-radius:8px; padding:5px 9px }
 .sum b { display:block; font-size:17px }
-.category-block + .category-block { margin-top:14px }
-.category-block h3 { margin-bottom:6px }
-.tile-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px }
-.tile { aspect-ratio:1; display:flex; flex-direction:column; justify-content:center; gap:3px; padding:10px; overflow-wrap:anywhere }
-.tile b { font-size:19px }
 .more { width:100%; margin-top:8px }
 .day { display:flex; justify-content:space-between; gap:8px; color:var(--mute); font-size:13px; margin:10px 0 0; padding-bottom:4px; border-bottom:1px solid var(--line); overflow-wrap:anywhere }
 .tx { display:grid; grid-template-columns:minmax(0,1fr) auto 44px; align-items:center; gap:5px; padding:2px 0; overflow-wrap:anywhere }
+.tx.expense-row { grid-template-columns:minmax(0,1fr) auto 44px 44px }
 .tx .money { font-weight:600; max-width:32vw; text-align:right }
 .tx small { display:block; color:var(--mute); font-size:13px }
 .transfer-note { font-size:13px; margin-top:8px }
@@ -93,29 +97,86 @@ details[open] > summary::after { transform:rotate(225deg); margin-bottom:0 }
 .fab-wrap { position:fixed; bottom:12px; right:calc(12px + env(safe-area-inset-right, 0px)); padding-bottom:env(safe-area-inset-bottom, 0px); z-index:2 }
 .fab { width:56px; height:56px; padding:0; border-radius:50%; font-size:28px; line-height:1 }
 .toast { position:fixed; z-index:3; bottom:calc(76px + env(safe-area-inset-bottom, 0px)); left:50%; transform:translateX(-50%); max-width:calc(100% - 24px); border-radius:8px; padding:8px 14px; color:var(--card); background:var(--ink); text-align:center; pointer-events:none }
-.sheet { position:fixed; inset:0; width:100%; height:100%; max-width:none; max-height:none; margin:0; border:0; padding:0; background:transparent; color:var(--ink); overflow:hidden }
+.sheet { position:fixed; inset:var(--entry-top, 0px) 0 auto; width:100%; height:var(--entry-height, 100%); max-width:none; max-height:none; margin:0; border:0; padding:0; background:transparent; color:var(--ink); overflow:hidden }
 .sheet[open] { display:flex; justify-content:center; align-items:flex-end }
 .sheet::backdrop { background:var(--ink); opacity:.5 }
-.sheet-panel { width:min(100%, 600px); max-height:90vh; max-height:90dvh; overflow-y:auto; overscroll-behavior:contain; background:var(--card); border:1px solid var(--line); border-bottom:0; border-radius:16px 16px 0 0; padding:0 12px calc(12px + env(safe-area-inset-bottom, 0px)) }
-.sheet-header { position:sticky; top:0; z-index:1; display:flex; justify-content:space-between; align-items:center; min-height:50px; background:var(--card); margin-bottom:6px }
-.sheet form { display:grid; gap:10px }
+.sheet-panel { display:flex; flex-direction:column; width:min(100%, 600px); max-height:90%; overflow:hidden; background:var(--card); border:1px solid var(--line); border-bottom:0; border-radius:16px 16px 0 0 }
+.sheet-header { display:flex; justify-content:space-between; align-items:center; min-height:50px; padding-inline:12px }
+.sheet form { display:flex; flex-direction:column; min-height:0 }
+.entry-scroll { display:grid; gap:8px; padding:4px 12px 12px; min-height:0; overflow:auto; overscroll-behavior:contain }
+.entry-footer { flex:none; padding:8px 12px calc(8px + env(safe-area-inset-bottom, 0px)); border-top:1px solid var(--line); background:var(--card) }
+.entry-footer .primary { width:100% }
+.entry-footer .status:not(:empty) { margin:0 0 4px }
+.date-shortcuts { display:flex; gap:4px }
+.date-shortcuts button { flex:1; padding-inline:2px }
 fieldset { margin:0; padding:0; border:0; min-width:0 }
 legend { padding:0; margin-bottom:4px }
 .choices { display:grid; gap:5px; grid-template-columns:repeat(3,minmax(0,1fr)) }
 .cat-choices { grid-template-columns:repeat(4,minmax(0,1fr)) }
 .choice { display:flex; flex-direction:column; justify-content:center; align-items:center; gap:2px; padding:5px 3px; font-size:14px; line-height:1.25 }
-.choice small { font-size:12px; color:var(--mute); line-height:1.25 }
-.choice[aria-pressed="true"] { background:var(--accbg); border-color:var(--acc); color:var(--acc); font-weight:700 }
-.choice[aria-pressed="true"] small { font-weight:400 }
+.choice[aria-pressed="true"], .choice[aria-selected="true"] { background:var(--accbg); border-color:var(--acc); color:var(--acc); font-weight:700 }
+.cat-choices { grid-auto-rows:1fr }
+.category-hint, .chart-note { color:var(--mute); font-size:12px; margin-top:6px }
+.check-row { display:flex; gap:6px; align-items:center; min-height:44px; font-size:14px; cursor:pointer }
+.check-row input { flex:none; width:44px; min-width:44px; height:44px; padding:0; appearance:none; display:grid; place-items:center; background:none; border:0; cursor:pointer }
+.check-row input::before { content:""; width:36px; height:22px; border:1px solid var(--mute); background:var(--bg); border-radius:12px; grid-area:1/1 }
+.check-row input::after { content:""; width:14px; height:14px; background:var(--mute); border-radius:50%; grid-area:1/1; transform:translateX(-7px) }
+.check-row input:checked::before { background:var(--acc); border-color:var(--acc) }
+.check-row input:checked::after { background:var(--card); transform:translateX(7px) }
+.demo-banner { background:var(--accbg); color:var(--ink); padding:8px 12px; border-radius:8px; margin-bottom:8px }
+.guide { font-size:14px }
+.stats-heading, .stats-tools, .detail-heading, .day-controls { display:flex; justify-content:space-between; align-items:center; gap:6px }
+.stat-tabs { grid-template-columns:repeat(4,minmax(0,1fr)); margin-block:4px 10px }
+.stats-tools { flex-wrap:wrap; margin-bottom:6px }
+.stats-tools .choices { display:flex; margin-inline-start:auto }
+.stats-tools .choice { padding-inline:8px }
+.chart-figure { margin:8px auto; max-width:536px; position:relative }
+.chart-plot { position:relative }
+.chart-figure svg { display:block; width:100%; height:auto; overflow:visible }
+.chart-figure .donut { width:min(100%, 232px); margin:auto }
+.chart-figure .daily-svg { touch-action:pan-y }
+.chart-figure .daily-svg, .chart-figure .donut { cursor:pointer }
+.chart-figure text { fill:var(--mute); font-size:11px; font-variant-numeric:tabular-nums }
+.chart-figure .chart-value { fill:var(--ink); font-weight:600 }
+.chart-figure .chart-grid { stroke:var(--line); stroke-width:1 }
+.chart-figure .average-line { stroke:var(--out); stroke-width:1.5; stroke-dasharray:4 4 }
+.chart-figure .selected-bar { fill:var(--acc) }
+.chart-tooltip { position:absolute; z-index:1; width:max-content; max-width:100%; padding:6px 8px; background:var(--accbg); border:1px solid var(--line); color:var(--ink); border-radius:8px; font-size:14px; overflow-wrap:anywhere; pointer-events:none }
+.month-hits { position:absolute; inset:0; display:grid; grid-template-columns:repeat(6,1fr) }
+.month-hits button { background:transparent; border-color:transparent; padding:0 }
+.rank-list { display:grid; gap:4px; margin-top:8px }
+.rank-row { width:100%; display:grid; grid-template-columns:28px minmax(0,1fr) auto auto; align-items:center; gap:6px; padding:5px; text-align:left }
+.rank-row .money { max-width:38vw; text-align:right }
+.rank-row[aria-pressed="true"] { border-color:var(--acc); background:var(--accbg) }
+.rank-badge { display:grid; place-items:center; width:24px; height:24px; border-radius:50%; background:var(--accbg); color:var(--ink); font-size:12px }
+.rank-name { display:grid; gap:4px; overflow-wrap:anywhere }
+.rank-track { height:3px; border-radius:4px; overflow:hidden; background:var(--line) }
+.rank-track i { display:block; height:100% }
+.rank-percent { font-size:12px; color:var(--mute) }
+.asset-row, .top-row { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:6px; padding:8px 0; border-bottom:1px solid var(--line); overflow-wrap:anywhere }
+.asset-row:last-child, .top-row:last-child { border-bottom:0 }
+.asset-row small, .top-row small { display:block; color:var(--mute); font-size:12px }
+.asset-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-inline-end:6px }
+.stat-detail { border-top:1px solid var(--line); margin-top:12px; padding-top:4px }
+.tx-title { min-width:0 }
+.tx-flag { color:var(--mute); background:transparent; border-color:transparent; padding:2px 0; font-size:12px }
+.tx-flag[aria-pressed="true"] { color:var(--acc); background:var(--accbg) }
+.top-tag { color:var(--acc); margin-inline-start:6px; font-size:12px }
 #entry-msg:not(:empty) { color:var(--out) }
 #entry-msg:empty { display:none }
-@media (max-width:360px) { .cat-choices { grid-template-columns:repeat(3,minmax(0,1fr)) } }
+@media (max-width:420px) { .cat-choices { grid-template-columns:repeat(3,minmax(0,1fr)) } }
 </style>
 </head>
 <body>
 <main>
+  <p class="demo-banner" id="demo-banner" hidden>演示模式：数据不会保存，去掉网址里的 ?demo=1 即可回到正常使用</p>
   <h1>总资产（所有账户合计）</h1>
   <p class="total money" id="total">0.00</p>
+  <section class="panel guide" id="guide" aria-labelledby="guide-title" hidden>
+    <h2 id="guide-title">开始记账</h2>
+    <p>第一步：点账户卡片右上角的“⋯”，设置每个账户现在的余额。</p>
+    <p>第二步：点右下角的＋记第一笔。</p>
+  </section>
 
   <section class="panel" aria-labelledby="accounts-title">
     <h2 id="accounts-title">账户</h2>
@@ -134,7 +195,7 @@ legend { padding:0; margin-bottom:4px }
   <section class="panel" aria-labelledby="mlabel">
     <div class="nav">
       <button class="icon" type="button" id="prev" aria-label="上个月">‹</button>
-      <div class="month"><h2 id="mlabel"></h2><small>月度汇总</small></div>
+      <div class="month"><h2><button class="quiet" type="button" id="mlabel" title="回到本月"></button></h2><small>月度汇总</small></div>
       <button class="icon" type="button" id="next" aria-label="下个月">›</button>
     </div>
     <div class="sum">
@@ -145,15 +206,23 @@ legend { padding:0; margin-bottom:4px }
     </div>
   </section>
 
-  <section class="panel" id="stats" hidden aria-label="分类统计">
-    <div class="category-block" id="expense-stats">
-      <h3>支出分类</h3><div class="tile-grid" id="expense-tiles"></div>
-      <button class="more secondary" type="button" id="expense-more" aria-controls="expense-tiles" aria-expanded="false" hidden>展开全部</button>
+  <section class="panel" id="stats" aria-labelledby="stats-title">
+    <div class="stats-heading">
+      <h2 id="stats-title">统计</h2>
+      <label class="check-row"><input id="exclude-oneoff" type="checkbox" role="switch">排除一次性大额</label>
     </div>
-    <div class="category-block" id="income-stats">
-      <h3>收入来源</h3><div class="tile-grid" id="income-tiles"></div>
-      <button class="more secondary" type="button" id="income-more" aria-controls="income-tiles" aria-expanded="false" hidden>展开全部</button>
+    <div class="choices stat-tabs" id="stat-tabs" role="tablist" aria-label="统计类型">
+      <button class="choice" type="button" id="tab-composition" data-tab="composition" role="tab" aria-selected="true" aria-controls="stat-panel">构成</button>
+      <button class="choice" type="button" id="tab-daily" data-tab="daily" role="tab" aria-selected="false" aria-controls="stat-panel" tabindex="-1">每日</button>
+      <button class="choice" type="button" id="tab-monthly" data-tab="monthly" role="tab" aria-selected="false" aria-controls="stat-panel" tabindex="-1">月度</button>
+      <button class="choice" type="button" id="tab-assets" data-tab="assets" role="tab" aria-selected="false" aria-controls="stat-panel" tabindex="-1">资产</button>
     </div>
+    <div id="stat-panel" role="tabpanel" tabindex="0" aria-labelledby="tab-composition"></div>
+  </section>
+
+  <section class="panel" aria-labelledby="top-title">
+    <h2 id="top-title">本月最大支出 Top5</h2>
+    <div id="top-expense"></div>
   </section>
 
   <section class="panel" aria-labelledby="list-title">
@@ -185,30 +254,40 @@ legend { padding:0; margin-bottom:4px }
 <div id="toast" role="status" aria-live="polite"></div>
 <dialog class="sheet" id="entry" aria-labelledby="entry-title">
   <div class="sheet-panel" id="entry-panel">
-    <header class="sheet-header"><h2 id="entry-title">记一笔</h2><button class="quiet" type="button" id="close-entry" autofocus>关闭</button></header>
+    <header class="sheet-header"><h2 id="entry-title">记一笔</h2><button class="quiet" type="button" id="close-entry">关闭</button></header>
     <form id="entry-form" novalidate>
+      <div class="entry-scroll" id="entry-scroll">
       <div class="choices" id="seg" role="group" aria-label="记账类型">
         <button class="choice" type="button" data-type="expense" aria-pressed="true">支出</button>
         <button class="choice" type="button" data-type="income" aria-pressed="false">收入</button>
         <button class="choice" type="button" data-type="transfer" aria-pressed="false">转账</button>
       </div>
       <div class="fields">
-        <label>金额<input id="amt" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" required></label>
-        <label>日期<input id="date" type="date" required></label>
+        <label>金额<input id="amt" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" required autofocus></label>
+        <div>
+          <label>日期<input id="date" type="date" required></label>
+          <div class="date-shortcuts"><button type="button" id="date-today">今天</button><button type="button" id="date-yesterday">昨天</button></div>
+        </div>
       </div>
       <fieldset><legend id="t-acc">从哪个账户付</legend><div class="choices" id="acc"></div></fieldset>
       <fieldset id="l-to" hidden><legend>转入账户</legend><div class="choices" id="to"></div></fieldset>
-      <fieldset id="l-cat"><legend id="t-cat">分类</legend><div class="choices cat-choices" id="cat"></div></fieldset>
+      <fieldset id="l-cat"><legend id="t-cat">分类</legend><div class="choices cat-choices" id="cat" aria-describedby="category-hint"></div><p class="category-hint" id="category-hint" aria-live="polite"></p></fieldset>
+      <label class="check-row" id="entry-oneoff-row"><input type="checkbox" role="switch" id="entry-oneoff">一次性大额（不计入日常统计）</label>
       <label>备注<input id="note" placeholder="可不填"></label>
+      </div>
+      <div class="entry-footer">
       <p class="status" id="entry-msg" role="alert"></p>
       <button class="primary" type="submit" id="add">记下</button>
+      </div>
     </form>
   </div>
 </dialog>
 <script>
 const STORAGE_KEY = 'ledger-v1';
-const EXPENSE = ['餐饮','外卖','购物','交通','娱乐','游戏','订阅','其他','医疗','日用','居住','学习','人情红包','数码','直播成本'];
-const INCOME = ['工资','直播','外卖返利','其他','理财收益','退款'];
+const PREFS_KEY = 'ledger-v1-prefs';
+const demo = new URLSearchParams(location.search).get('demo') === '1';
+const EXPENSE = ['餐饮','外卖','购物','日用','交通','居住','医疗','娱乐','游戏','订阅','学习','数码','人情红包','直播成本','其他'];
+const INCOME = ['工资','直播','外卖返利','理财收益','退款','其他'];
 const CATEGORY_HINTS = new Map([
   ['外卖','通过外卖平台下的单'],
   ['餐饮','堂食、买菜、奶茶咖啡、零食'],
@@ -223,8 +302,9 @@ const money = n => (Object.is(n, -0) ? 0 : n).toLocaleString('zh-CN', {
   minimumFractionDigits:2, maximumFractionDigits:2
 });
 const pad = n => String(n).padStart(2, '0');
-function today() {
+function today(offset = 0) {
   const d = new Date();
+  if (offset) d.setDate(d.getDate() + offset);
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 // Put all displayed data in text nodes or form values, so it is never parsed as HTML.
@@ -246,28 +326,88 @@ function isLedger(value) {
     value.tx.every(t => t && ['number','string'].includes(typeof t.id) && typeof t.date === 'string' &&
       ['expense','income','transfer'].includes(t.type) && Number.isFinite(Number(t.amt)));
 }
+function emptyLedger() {
+  return {accounts:[{id:'a1',name:'微信',open:0},{id:'a2',name:'余额宝',open:0},{id:'a3',name:'小荷包',open:0}],tx:[]};
+}
 function load() {
   try {
     const value = JSON.parse(localStorage.getItem(STORAGE_KEY));
     if (isLedger(value)) return value;
   } catch {}
-  return {accounts:[{id:'a1',name:'微信',open:0},{id:'a2',name:'余额宝',open:0},{id:'a3',name:'小荷包',open:0}],tx:[]};
+  return emptyLedger();
 }
-let state = load();
+function monthOffset(key, offset) {
+  const [year, index] = key.split('-').map(Number);
+  const date = new Date(year, index - 1 + offset, 1);
+  return date.getFullYear() + '-' + pad(date.getMonth() + 1);
+}
+function calendarDays(key) {
+  const [year, index] = key.split('-').map(Number);
+  return new Date(year, index, 0).getDate();
+}
+function elapsedDays(key) {
+  const now = today();
+  const current = now.slice(0, 7);
+  return key === current ? Number(now.slice(8)) : key < current ? calendarDays(key) : 0;
+}
+function demoLedger() {
+  const data = emptyLedger();
+  [260, 9600, 650].forEach((open, index) => { data.accounts[index].open = open; });
+  for (let offset = -5; offset <= 0; offset++) {
+    const key = monthOffset(today().slice(0, 7), offset);
+    const days = elapsedDays(key);
+    function record(day, type, amt, acc, fields) {
+      data.tx.push({id:data.tx.length + 1, date:key + '-' + pad(Math.min(day, days)), type, amt, acc, ...fields});
+    }
+    record(1, 'income', 7200 + offset * 160, 'a2', {cat:'工资'});
+    record(4, 'income', 380 - offset * 19, 'a3', {cat:'直播'});
+    record(7, 'income', 18, 'a1', {cat:'外卖返利'});
+    record(12, 'income', 36 + offset, 'a2', {cat:'理财收益'});
+    for (let day = 1; day <= days; day++) {
+      const cat = ['餐饮','外卖','交通'][day % 3];
+      record(day, 'expense', 18 + (day * 7 + offset + 5) % 32, day % 2 ? 'a1' : 'a2', {cat});
+    }
+    record(5, 'expense', 59, 'a2', {cat:'日用'});
+    record(9, 'expense', 12, 'a1', {cat:'订阅'});
+    record(10, 'expense', 9.9, 'a1', {cat:'购物'});
+    record(3, 'transfer', 800, 'a2', {to:'a1', note:'日常开销'});
+    record(8, 'transfer', 180, 'a2', {to:'a3', note:'存入小荷包'});
+    if (offset === 0) record(12, 'expense', 10000, 'a2', {cat:'学习', note:'课程学费（演示）', oneoff:true});
+  }
+  return data;
+}
+function loadPrefs() {
+  if (!demo) {
+    try {
+      const saved = JSON.parse(localStorage.getItem(PREFS_KEY));
+      return {expense:saved?.expense ?? {}, income:saved?.income ?? {}};
+    } catch {}
+  }
+  return {expense:{}, income:{}};
+}
+const prefs = loadPrefs();
+let state = demo ? demoLedger() : load();
 let month = today().slice(0, 7);
 let type = 'expense';
 let source;
 let destination;
-const selectedCategory = {expense:EXPENSE[0], income:INCOME[0]};
-const expanded = {expense:false, income:false, days:false};
+let entrySelection = {};
+let expandDays = false;
+let statTab = 'composition';
+let compositionType = 'expense';
+let monthlyMetric = 'expense';
+let selectedSlice = null;
+let selectedDay = null;
 const storageError = '未能保存，请确认浏览器允许此网站存储数据后再试。';
 let savedScroll = 0;
 let toastTimer;
 function save(next) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-  } catch {
-    return false;
+  if (!demo) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      return false;
+    }
   }
   state = next;
   return true;
@@ -314,6 +454,7 @@ function renderAccounts() {
   for (const card of $('accs').querySelectorAll('.acc-card')) card.remove();
   addAccount.before(...cards);
   $('total').textContent = money([...result.values()].reduce((sum, value) => sum + value, 0));
+  $('guide').hidden = state.tx.length > 0 || state.accounts.some(a => Number(a.open));
 }
 function renderManagement() {
   $('managed-accounts').replaceChildren(...state.accounts.map(a => {
@@ -330,6 +471,7 @@ function renderManagement() {
       const accounts = state.accounts.map(account => account.id === a.id ? {...account, open} : account);
       if (save({...state, accounts})) {
         renderAccounts();
+        if (statTab === 'assets') renderStatistics();
         $('managed-msg').textContent = '已更新起始余额。';
       } else {
         input.value = state.accounts.find(account => account.id === a.id).open;
@@ -345,6 +487,7 @@ function renderManagement() {
       } else if (save({...state, accounts:state.accounts.filter(account => account.id !== a.id)})) {
         renderAccounts();
         renderManagement();
+        if (statTab === 'assets') renderStatistics();
         $('account-management').querySelector('summary').focus();
         status.textContent = '已删除账户。';
       } else {
@@ -389,6 +532,7 @@ $('account-form').addEventListener('submit', event => {
   setAccountForm(false);
   renderAccounts();
   renderManagement();
+  if (statTab === 'assets') renderStatistics();
   $('show-account-form').focus({preventScroll:true});
   $('account-msg').textContent = `已添加「${name}」。`;
 });
@@ -399,121 +543,555 @@ function setMore(id, hasMore, isOpen, text) {
   control.textContent = isOpen ? '收起' : text;
   control.setAttribute('aria-expanded', String(isOpen));
 }
-function renderCategories(kind, amounts, total) {
-  const rows = [...amounts].sort((a, b) => b[1] - a[1]);
-  $(kind + '-stats').hidden = !rows.length;
-  const visible = expanded[kind] ? rows : rows.slice(0, 6);
-  const amountClass = kind === 'income' ? 'money in' : 'money out';
-  $(kind + '-tiles').replaceChildren(...visible.map(([name, amount]) => {
-    const tile = element('div', undefined, 'tile');
-    const share = total ? `${(amount / total * 100).toLocaleString('zh-CN', {maximumFractionDigits:1})}%` : '0%';
-    tile.append(element('span', name), element('b', money(amount), amountClass), element('small', share));
-    return tile;
-  }));
-  setMore(kind + '-more', rows.length > 6, expanded[kind], '展开全部');
+function categoryName(t) {
+  return t.cat ?? '未分类';
 }
-function renderTransactions(transactions) {
+function isOneoff(t) {
+  return t.type === 'expense' && t.oneoff === true;
+}
+function recentFirst(a, b) {
+  return b.date.localeCompare(a.date) || Number(b.id) - Number(a.id);
+}
+function transactionGroups(transactions) {
   const groups = new Map();
-  const accounts = new Map(state.accounts.map(a => [a.id, a.name]));
-  const accountName = id => accounts.get(id) ?? '已删除账户';
-  for (const t of [...transactions].sort((a, b) => b.date.localeCompare(a.date) || Number(b.id) - Number(a.id))) {
+  for (const t of [...transactions].sort(recentFirst)) {
     if (!groups.has(t.date)) groups.set(t.date, []);
     groups.get(t.date).push(t);
   }
-  const visible = expanded.days ? [...groups] : [...groups].slice(0, 7);
-  const days = visible.map(([date, entries]) => {
+  return [...groups];
+}
+function toggleOneoff(t, container) {
+  const next = {...t};
+  if (isOneoff(t)) delete next.oneoff;
+  else next.oneoff = true;
+  if (!save({...state, tx:state.tx.map(entry => entry === t ? next : entry)})) {
+    showToast(storageError);
+    return;
+  }
+  renderMonth();
+  const scope = container.id === 'list' ? container : $('stat-panel');
+  const control = [...scope.querySelectorAll('.tx-flag')].find(b => b.dataset.txId === String(t.id));
+  (control ?? scope).focus({preventScroll:true});
+  showToast(isOneoff(next) ? '已标为一次性' : '已取消一次性标记');
+}
+function transactionNodes(groups, container) {
+  const accounts = new Map(state.accounts.map(a => [a.id, a.name]));
+  const accountName = id => accounts.get(id) ?? '已删除账户';
+  return groups.map(([date, entries]) => {
     const group = element('div', undefined, 'day-group');
     const header = element('h3', undefined, 'day');
     const expense = entries.reduce((sum, t) => sum + (t.type === 'expense' ? Number(t.amt) : 0), 0);
     header.append(element('span', date));
-    if (expense) header.append(element('span', `支出 ${money(expense)}`, 'money'));
+    if (expense) header.append(element('span', '支出 ' + money(expense), 'money'));
     group.append(header);
     for (const t of entries) {
-      const category = t.cat ?? '未分类';
+      const category = categoryName(t);
       const row = element('div', undefined, 'tx');
       const transfer = t.type === 'transfer';
-      const title = element('div', t.note || (transfer ? '账户间转账' : category));
+      const title = element('div', t.note || (transfer ? '账户间转账' : category), 'tx-title');
       const from = accountName(t.acc);
-      title.append(element('small', transfer ? `转账 ${from} → ${accountName(t.to)}` : `${category} · ${from}`));
+      title.append(element('small', transfer ? '转账 ' + from + ' → ' + accountName(t.to) : category + ' · ' + from));
+      row.append(title);
       const sign = t.type === 'income' ? '+' : t.type === 'expense' ? '−' : '';
       const amount = element('span', sign + money(Number(t.amt)), transfer ? 'money' : 'money ' + (t.type === 'income' ? 'in' : 'out'));
+      row.append(amount);
+      if (t.type === 'expense') {
+        row.classList.add('expense-row');
+        const flag = button(isOneoff(t) ? '一次性' : '标记', 'tx-flag', () => toggleOneoff(t, container));
+        flag.setAttribute('aria-label', isOneoff(t) ? '取消一次性标记' : '标记为一次性大额');
+        flag.setAttribute('aria-pressed', String(isOneoff(t)));
+        flag.dataset.txId = t.id;
+        row.append(flag);
+      }
       const remove = button('×', 'icon quiet', () => {
         if (save({...state, tx:state.tx.filter(entry => entry !== t)})) {
           renderAccounts();
           renderMonth();
-          $('list-title').focus({preventScroll:true});
+          (container.id === 'list' ? $('list-title') : $('stat-panel')).focus({preventScroll:true});
         } else {
           showToast(storageError);
         }
       });
       remove.setAttribute('aria-label', '删除这笔');
-      row.append(title, amount, remove);
+      row.append(remove);
       group.append(row);
     }
     return group;
   });
-  $('list').replaceChildren(...(days.length ? days : [element('p', '这个月还没有记录。', 'empty')]));
-  setMore('days-more', groups.size > 7, expanded.days, '展开更多');
+}
+function renderTransactions(transactions) {
+  const groups = transactionGroups(transactions);
+  const visible = expandDays ? groups : groups.slice(0, 7);
+  $('list').replaceChildren(...(visible.length ? transactionNodes(visible, $('list')) :
+    [element('p', '这个月还没有记录。', 'empty')]));
+  setMore('days-more', groups.length > 7, expandDays, '展开更多');
+}
+function monthData(key, exclude) {
+  const entries = state.tx.filter(t => t.date.slice(0, 7) === key);
+  const totals = {expense:0, income:0};
+  const skipped = {count:0, amount:0};
+  const days = Array(elapsedDays(key)).fill(0);
+  const included = [];
+  for (const t of entries) {
+    const amount = Number(t.amt);
+    if (exclude && isOneoff(t)) {
+      skipped.count++;
+      skipped.amount += amount;
+      continue;
+    }
+    included.push(t);
+    if (t.type === 'transfer') continue;
+    totals[t.type] += amount;
+    const day = Number(t.date.slice(8));
+    if (t.type === 'expense' && day > 0 && day <= days.length) days[day - 1] += amount;
+  }
+  const average = days.length ? days.reduce((sum, amount) => sum + amount, 0) / days.length : 0;
+  totals.net = Math.round((totals.income - totals.expense) * 100) / 100;
+  return {key, entries, included, skipped, totals, days, average};
+}
+function renderTopExpenses(entries) {
+  const list = $('top-expense');
+  const top = entries.filter(t => t.type === 'expense')
+    .sort((a, b) => Number(b.amt) - Number(a.amt) || recentFirst(a, b)).slice(0, 5);
+  list.replaceChildren(...top.map(t => {
+    const row = element('div', undefined, 'top-row');
+    const info = element('div', t.note || categoryName(t));
+    if (isOneoff(t)) info.append(element('span', '一次性', 'top-tag'));
+    info.append(element('small', t.date));
+    row.append(info, element('b', '¥' + money(Number(t.amt)), 'money out'));
+    return row;
+  }));
+  if (!top.length) list.append(element('p', '本月还没有支出。', 'empty'));
 }
 function renderMonth() {
-  const [year, selectedMonth] = month.split('-').map(Number);
-  $('mlabel').textContent = `${year}年${pad(selectedMonth)}月`;
-  const transactions = state.tx.filter(t => t.date.slice(0, 7) === month);
-  const amounts = {expense:new Map(), income:new Map()};
-  const totals = {expense:0, income:0};
-  for (const t of transactions) {
-    if (t.type === 'transfer') continue;
-    const category = t.cat ?? '未分类';
-    const amount = Number(t.amt);
-    const bucket = amounts[t.type];
-    bucket.set(category, (bucket.get(category) ?? 0) + amount);
-    totals[t.type] += amount;
-  }
-  const now = today();
-  const days = now.slice(0, 7) === month ? Number(now.slice(8)) : new Date(year, selectedMonth, 0).getDate();
-  const net = Math.round((totals.income - totals.expense) * 100) / 100;
-  $('s-in').textContent = money(totals.income);
-  $('s-out').textContent = money(totals.expense);
-  $('s-avg').textContent = money(totals.expense / days);
-  $('s-net').textContent = money(net);
-  $('s-net').classList.toggle('in', net > 0);
-  $('s-net').classList.toggle('out', net < 0);
-  $('stats').hidden = !amounts.expense.size && !amounts.income.size;
-  renderCategories('expense', amounts.expense, totals.expense);
-  renderCategories('income', amounts.income, totals.income);
-  renderTransactions(transactions);
+  const [year, index] = month.split('-').map(Number);
+  const current = today().slice(0, 7);
+  $('mlabel').textContent = year + '年' + pad(index) + '月';
+  $('next').disabled = month >= current;
+  const all = monthData(month, false);
+  const stats = $('exclude-oneoff').checked ? monthData(month, true) : all;
+  $('s-in').textContent = money(all.totals.income);
+  $('s-out').textContent = money(all.totals.expense);
+  $('s-avg').textContent = money(stats.average);
+  $('s-net').textContent = money(all.totals.net);
+  $('s-net').classList.toggle('in', all.totals.net > 0);
+  $('s-net').classList.toggle('out', all.totals.net < 0);
+  renderStatistics(stats);
+  renderTopExpenses(all.entries);
+  renderTransactions(all.entries);
 }
-function resetExpansion() {
-  expanded.expense = expanded.income = expanded.days = false;
-}
-function shiftMonth(offset) {
-  const [year, selectedMonth] = month.split('-').map(Number);
-  const date = new Date(year, selectedMonth - 1 + offset, 1);
-  month = `${date.getFullYear()}-${pad(date.getMonth() + 1)}`;
-  resetExpansion();
+function selectMonth(key) {
+  if (key === month || key > today().slice(0, 7)) return;
+  month = key;
+  expandDays = false;
+  selectedSlice = null;
+  selectedDay = null;
   renderMonth();
 }
-$('prev').addEventListener('click', () => shiftMonth(-1));
-$('next').addEventListener('click', () => shiftMonth(1));
-for (const kind of ['expense','income','days']) {
-  $(kind + '-more').addEventListener('click', () => {
-    expanded[kind] = !expanded[kind];
-    renderMonth();
-    if (!expanded[kind]) $(kind + '-more').scrollIntoView({block:'nearest'});
-  });
+$('prev').addEventListener('click', () => selectMonth(monthOffset(month, -1)));
+$('next').addEventListener('click', () => selectMonth(monthOffset(month, 1)));
+$('mlabel').addEventListener('click', () => selectMonth(today().slice(0, 7)));
+$('days-more').addEventListener('click', () => {
+  expandDays = !expandDays;
+  renderTransactions(monthData(month, false).entries);
+  if (!expandDays) $('days-more').scrollIntoView({block:'nearest'});
+});
+$('exclude-oneoff').addEventListener('change', renderMonth);
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const cents = n => money(Math.round(n * 100) / 100);
+const percent = (amount, total) => (amount / total * 100).toFixed(1) + '%';
+const chartColor = index => 'var(--chart-' + (index % 8 + 1) + ')';
+function svgNode(tag, attrs, text) {
+  const node = document.createElementNS(SVG_NS, tag);
+  for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, String(value));
+  if (text !== undefined) node.textContent = text;
+  return node;
 }
+function makeChart(label, viewBox, className) {
+  const figure = element('figure', undefined, 'chart-figure');
+  const svg = svgNode('svg', {viewBox, class:className, role:'img', 'aria-label':label});
+  figure.append(svg);
+  return {figure, svg};
+}
+function caption(chart, text) {
+  chart.figure.append(element('figcaption', text, 'chart-note'));
+}
+function statTools(title, options, active, change) {
+  const tools = element('div', undefined, 'stats-tools');
+  tools.append(element('h3', title));
+  if (options) {
+    const group = element('div', undefined, 'choices');
+    group.setAttribute('role', 'group');
+    group.setAttribute('aria-label', title);
+    for (const [value, label] of options) {
+      const choice = button(label, 'choice', () => {
+        if (value === active) return;
+        change(value);
+        $('stat-panel').querySelector('.stats-tools [aria-pressed="true"]')?.focus({preventScroll:true});
+      });
+      choice.setAttribute('aria-pressed', String(value === active));
+      group.append(choice);
+    }
+    tools.append(group);
+  }
+  return tools;
+}
+const flowOptions = [['expense','支出'], ['income','收入']];
+const monthOptions = [...flowOptions, ['net','结余']];
+function detailContents(container, heading, entries, close) {
+  const header = element('div', undefined, 'detail-heading');
+  header.append(element('h3', heading));
+  if (close) header.append(button('返回', 'quiet', close));
+  container.replaceChildren(header, ...(entries.length ? transactionNodes(transactionGroups(entries), container) :
+    [element('p', '当天还没有记录。', 'empty')]));
+}
+function renderComposition(panel, data) {
+  const kind = compositionType;
+  const label = kind === 'expense' ? '支出' : '收入';
+  panel.append(statTools('本月' + label + '构成', flowOptions, kind, value => {
+    compositionType = value;
+    selectedSlice = null;
+    renderStatistics(data);
+  }));
+  const amounts = new Map();
+  const entries = data.included.filter(t => t.type === kind);
+  for (const t of entries) {
+    const name = categoryName(t);
+    amounts.set(name, (amounts.get(name) ?? 0) + Number(t.amt));
+  }
+  const total = data.totals[kind];
+  const ranked = [...amounts].sort((a, b) => b[1] - a[1])
+    .map(([name, amount], index) => ({name, amount, color:chartColor(index), group:false}));
+  if (total <= 0 || !ranked.length) {
+    panel.append(element('p', '本月没有可统计的' + label + '。', 'empty'));
+    return;
+  }
+  const slices = ranked.filter(row => row.amount / total >= 0.01);
+  const small = ranked.filter(row => row.amount / total < 0.01);
+  if (small.length) slices.push({
+    name:'更多', amount:small.reduce((sum, row) => sum + row.amount, 0),
+    color:chartColor(slices.length), group:true
+  });
+  const chart = makeChart('本月' + label + '构成环形图', '0 0 232 232', 'donut');
+  const ring = 2 * Math.PI * 86;
+  let start = 0;
+  for (const slice of slices) {
+    const length = slice.amount / total * ring;
+    const gap = slices.length === 1 ? 0 : Math.min(3, length * 0.35);
+    const attrs = {cx:116, cy:116, r:86, fill:'none', stroke:slice.color, 'stroke-width':30};
+    if (gap) Object.assign(attrs, {
+      'stroke-dasharray':(length - gap) + ' ' + (ring - length + gap),
+      'stroke-dashoffset':-start - gap / 2, transform:'rotate(-90 116 116)'
+    });
+    const arc = svgNode('circle', attrs);
+    arc.append(svgNode('title', {}, slice.name + ' ' + percent(slice.amount, total)));
+    chart.svg.append(arc);
+    slice.end = (start += length) / ring;
+  }
+  chart.svg.append(
+    svgNode('text', {x:116,y:108,'text-anchor':'middle'}, '本月' + label),
+    svgNode('text', {x:116,y:135,'text-anchor':'middle',class:'chart-value',style:'font-size:15px'}, '¥' + cents(total))
+  );
+  caption(chart, '本月' + label + '构成：' + slices.map(row => row.name + ' ' + percent(row.amount, total)).join('、') + '。');
+  const ranking = element('div', undefined, 'rank-list');
+  const detail = element('div', undefined, 'stat-detail');
+  const rankButtons = new Map();
+  let returnTo;
+  function refreshDetail() {
+    const match = [...ranked, ...slices.filter(row => row.group)].find(row =>
+      row.name === selectedSlice?.name && row.group === selectedSlice.group);
+    detail.hidden = !match;
+    for (const [name, control] of rankButtons) {
+      control.setAttribute('aria-pressed', String(!!match && !match.group && match.name === name));
+    }
+    if (!match) {
+      detail.replaceChildren();
+      return;
+    }
+    const selectedNames = new Set(match.group ? small.map(row => row.name) : [match.name]);
+    detailContents(detail, match.name + ' · 本月明细', entries.filter(t => selectedNames.has(categoryName(t))), () => {
+      selectedSlice = null;
+      refreshDetail();
+      (returnTo?.isConnected ? returnTo : panel).focus();
+    });
+  }
+  function select(row, control) {
+    selectedSlice = {name:row.name, group:row.group};
+    returnTo = control;
+    refreshDetail();
+    detail.scrollIntoView({block:'nearest'});
+    detail.querySelector('button')?.focus({preventScroll:true});
+  }
+  chart.svg.addEventListener('click', event => {
+    const bounds = chart.svg.getBoundingClientRect();
+    const x = (event.clientX - bounds.left) * 232 / bounds.width - 116;
+    const y = (event.clientY - bounds.top) * 232 / bounds.height - 116;
+    const radius = Math.hypot(x, y);
+    if (radius < 65 || radius > 108) return;
+    const angle = ((Math.atan2(y, x) / (2 * Math.PI)) + 1.25) % 1;
+    const slice = slices.find(row => angle < row.end) ?? slices.at(-1);
+    select(slice, rankButtons.get(slice.name));
+  });
+  for (const row of ranked) {
+    const control = button(undefined, 'rank-row', () => select(row, control));
+    const badge = element('span', [...String(row.name)][0] || '·', 'rank-badge');
+    badge.setAttribute('aria-hidden', 'true');
+    const title = element('span', row.name, 'rank-name');
+    const track = element('span', undefined, 'rank-track');
+    const line = element('i');
+    line.style.width = percent(row.amount, total);
+    line.style.backgroundColor = row.color;
+    track.setAttribute('aria-hidden', 'true');
+    track.append(line);
+    title.append(track);
+    control.append(badge, title, element('b', '¥' + cents(row.amount), 'money'),
+      element('span', percent(row.amount, total), 'rank-percent'));
+    ranking.append(control);
+    rankButtons.set(row.name, control);
+  }
+  panel.append(chart.figure, ranking, detail);
+  refreshDetail();
+}
+function compactAmount(value) {
+  if (Math.abs(value) >= 10000) return Number((value / 10000).toPrecision(3)) + '万';
+  return Number(value.toFixed(2)).toLocaleString('zh-CN');
+}
+function niceStep(max) {
+  const raw = max / 4;
+  const scale = 10 ** Math.floor(Math.log10(raw));
+  return ([1, 2, 2.5, 5, 10].find(n => n >= raw / scale) ?? 10) * scale;
+}
+function bar(svg, x, y, width, height, color, selected = false) {
+  const rect = svgNode('rect', {x, y, width, height, rx:1.5, fill:color, class:selected ? 'selected-bar' : ''});
+  svg.append(rect);
+  return rect;
+}
+function renderDaily(panel, data) {
+  panel.append(statTools('本月每日支出'));
+  if (!data.days.some(amount => amount > 0)) {
+    panel.append(element('p', '本月没有可绘制的每日支出。', 'empty'));
+    return;
+  }
+  const chart = makeChart('本月每日支出柱状图', '0 0 350 184', 'daily-svg');
+  const {svg} = chart;
+  const left = 42, right = 344, top = 12, bottom = 155;
+  const step = niceStep(Math.max(...data.days));
+  const maximum = Math.ceil(Math.max(...data.days) / step) * step;
+  const height = value => value * (bottom - top) / maximum;
+  for (let tick = 0; tick <= Math.round(maximum / step); tick++) {
+    const value = tick * step;
+    const y = bottom - height(value);
+    svg.append(svgNode('line', {x1:left,y1:y,x2:right,y2:y,class:'chart-grid'}),
+      svgNode('text', {x:left-4,y:y+4,'text-anchor':'end'}, compactAmount(value)));
+  }
+  const count = calendarDays(data.key);
+  const slot = (right - left) / count;
+  const bars = data.days.map((amount, index) => {
+    const barHeight = amount > 0 ? Math.max(3, height(amount)) : 1;
+    return bar(svg, left + slot * (index + 0.16), bottom - barHeight, slot * 0.68, barHeight,
+      amount > 0 ? chartColor(1) : 'var(--line)');
+  });
+  for (const day of [1, 5, 10, 15, 20, 25, count]) {
+    svg.append(svgNode('text', {x:left + slot * (day - 0.5),y:173,'text-anchor':'middle'}, day + '日'));
+  }
+  const averageY = bottom - height(data.average);
+  svg.append(svgNode('line', {x1:left,y1:averageY,x2:right,y2:averageY,class:'average-line'}),
+    svgNode('text', {x:right,y:averageY-4,'text-anchor':'end',class:'chart-value'}, '日均 ¥' + cents(data.average)));
+  const highest = Math.max(...data.days);
+  caption(chart, '本月已过 ' + data.days.length + ' 天，日均支出 ¥' + cents(data.average) +
+    '，最高为 ' + (data.days.indexOf(highest) + 1) + ' 日的 ¥' + cents(highest) + '。');
+  const tip = element('p', undefined, 'chart-tooltip');
+  tip.setAttribute('role', 'status');
+  const plot = element('div', undefined, 'chart-plot');
+  chart.figure.prepend(plot);
+  plot.append(svg, tip);
+  const controls = element('div', undefined, 'day-controls');
+  const previous = button('‹', 'icon quiet', () => setDay((selectedDay ?? 2) - 1));
+  const next = button('›', 'icon quiet', () => setDay((selectedDay ?? 0) + 1));
+  previous.setAttribute('aria-label', '查看前一天');
+  next.setAttribute('aria-label', '查看后一天');
+  controls.append(previous, element('span', '点选柱子查看当天'), next);
+  const detail = element('div', undefined, 'stat-detail');
+  function setDay(day, pointerY) {
+    selectedDay = day;
+    for (const [index, rect] of bars.entries()) rect.classList.toggle('selected-bar', index + 1 === day);
+    previous.disabled = day === 1;
+    next.disabled = day === data.days.length;
+    tip.hidden = day === null;
+    detail.hidden = day === null;
+    if (day === null) return;
+    const heading = Number(data.key.slice(5)) + '月' + day + '日';
+    tip.textContent = heading + '共支出 ¥' + cents(data.days[day - 1]);
+    const box = plot.getBoundingClientRect();
+    const barBox = bars[day - 1].getBoundingClientRect();
+    const center = barBox.left + barBox.width / 2 - box.left;
+    const anchor = (pointerY ?? barBox.top) - box.top;
+    const minTop = Math.max(0, -box.top);
+    const maxTop = Math.max(minTop, Math.min(box.bottom, window.innerHeight) - box.top - tip.offsetHeight);
+    tip.style.left = Math.max(0, Math.min(center - tip.offsetWidth / 2, box.width - tip.offsetWidth)) + 'px';
+    tip.style.top = Math.max(minTop, Math.min(anchor - tip.offsetHeight - 6, maxTop)) + 'px';
+    const date = data.key + '-' + pad(day);
+    detailContents(detail, heading + '明细', data.entries.filter(t => t.date === date));
+  }
+  let pointerId = null;
+  function point(event) {
+    const box = svg.getBoundingClientRect();
+    const x = (event.clientX - box.left) * 350 / box.width;
+    if (x < left || x >= left + slot * data.days.length) return;
+    const day = Math.floor((x - left) / slot) + 1;
+    if (day !== selectedDay) setDay(day, event.clientY);
+  }
+  svg.addEventListener('pointerdown', event => {
+    if (event.button !== 0) return;
+    pointerId = event.pointerId;
+    svg.setPointerCapture(pointerId);
+    point(event);
+  });
+  svg.addEventListener('pointermove', event => {
+    if (event.pointerId === pointerId) point(event);
+  });
+  for (const name of ['pointerup','pointercancel','lostpointercapture']) {
+    svg.addEventListener(name, () => { pointerId = null; });
+  }
+  panel.append(chart.figure, controls, detail);
+  setDay(selectedDay);
+}
+function renderMonthly(panel, data) {
+  const metric = monthlyMetric;
+  const label = monthOptions.find(([value]) => value === metric)[1];
+  panel.append(statTools('最近 6 个月', monthOptions, metric, value => {
+    monthlyMetric = value;
+    renderStatistics(data);
+  }));
+  const exclude = $('exclude-oneoff').checked;
+  const months = Array.from({length:6}, (_, index) => index === 5 ? data : monthData(monthOffset(data.key, index - 5), exclude));
+  const values = months.map(item => item.totals[metric]);
+  if (!months.some(item => item.included.some(t => t.type !== 'transfer' && (metric === 'net' || t.type === metric)))) {
+    panel.append(element('p', '最近 6 个月没有可统计的' + label + '。', 'empty'));
+    return months;
+  }
+  const chart = makeChart('最近六个月' + label + '柱状图', '0 0 350 184', 'monthly-svg');
+  const {svg} = chart;
+  const min = Math.min(0, ...values), max = Math.max(0, ...values);
+  const y = value => 22 + (max - value) * 113 / (max - min || 1);
+  const baseline = y(0);
+  svg.append(svgNode('line', {x1:0,y1:baseline,x2:350,y2:baseline,class:'chart-grid'}));
+  const hits = element('div', undefined, 'month-hits');
+  for (const [index, item] of months.entries()) {
+    const x = (index + 0.5) * 350 / 6;
+    const value = values[index];
+    const selected = item.key === month;
+    const plotted = y(value);
+    const height = Math.max(value ? 3 : 1, Math.abs(plotted - baseline));
+    const barTop = value < 0 ? baseline : baseline - height;
+    bar(svg, x - 15, barTop, 30, height, chartColor(1), selected);
+    svg.append(svgNode('text', {x, y:barTop-5, 'text-anchor':'middle', class:'chart-value'}, compactAmount(value)),
+      svgNode('text', {x, y:165, 'text-anchor':'middle', class:selected ? 'chart-value' : ''},
+        item.key.slice(2, 4) + '/' + item.key.slice(5)));
+    const hit = button(undefined, '', () => {
+      selectMonth(item.key);
+      $('stat-panel').querySelector('[aria-current="date"]')?.focus({preventScroll:true});
+    });
+    hit.setAttribute('aria-label', item.key + ' ' + label + ' ¥' + cents(value));
+    if (selected) hit.setAttribute('aria-current', 'date');
+    hits.append(hit);
+  }
+  const plot = element('div', undefined, 'chart-plot');
+  chart.figure.prepend(plot);
+  plot.append(svg, hits);
+  caption(chart, '最近六个月' + label + '：' + months.map((item, index) =>
+    item.key + ' ¥' + cents(values[index])).join('、') + '。');
+  panel.append(chart.figure);
+  return months;
+}
+function renderAssets(panel) {
+  panel.append(statTools('当前账户资产'));
+  const amounts = balances();
+  const accounts = state.accounts.map((account, index) => ({
+    name:account.name, amount:Math.round(amounts.get(account.id) * 100) / 100, color:chartColor(index)
+  }));
+  const positive = accounts.filter(row => row.amount > 0);
+  const total = positive.reduce((sum, row) => sum + row.amount, 0);
+  if (total > 0) {
+    const chart = makeChart('当前资产按账户分布的堆叠条', '0 0 350 22', 'asset-svg');
+    let used = 0;
+    for (const row of positive) {
+      const width = 350 * row.amount / total;
+      chart.svg.append(svgNode('rect', {x:used, y:2, width, height:18, fill:row.color}));
+      used += width;
+    }
+    caption(chart, '正余额合计 ¥' + cents(total) + '：' + positive.map(row =>
+      row.name + ' ' + percent(row.amount, total)).join('、') + '。');
+    panel.append(chart.figure);
+  } else {
+    panel.append(element('p', '暂无正余额可绘制资产构成。', 'empty'));
+  }
+  for (const row of accounts) {
+    const item = element('div', undefined, 'asset-row');
+    const name = element('div');
+    const dot = element('span', undefined, 'asset-dot');
+    dot.style.backgroundColor = row.amount > 0 ? row.color : 'var(--line)';
+    name.append(dot, document.createTextNode(row.name),
+      element('small', row.amount < 0 ? '负余额' : total ? percent(row.amount, total) : '占比 —'));
+    item.append(name, element('b', '¥' + cents(row.amount), row.amount < 0 ? 'money out' : 'money'));
+    panel.append(item);
+  }
+}
+function renderStatistics(data = monthData(month, $('exclude-oneoff').checked)) {
+  const panel = $('stat-panel');
+  panel.setAttribute('aria-labelledby', 'tab-' + statTab);
+  panel.replaceChildren();
+  let range = [data];
+  if (statTab === 'composition') renderComposition(panel, data);
+  else if (statTab === 'daily') renderDaily(panel, data);
+  else if (statTab === 'monthly') range = renderMonthly(panel, data);
+  else renderAssets(panel);
+  if (statTab !== 'assets' && $('exclude-oneoff').checked) {
+    const skipped = range.reduce((sum, item) => ({
+      count:sum.count + item.skipped.count, amount:sum.amount + item.skipped.amount
+    }), {count:0, amount:0});
+    const note = element('p', '已排除 ' + skipped.count + ' 笔，共 ¥' + cents(skipped.amount), 'chart-note');
+    note.id = 'exclusion-note';
+    const chart = panel.querySelector('.chart-figure');
+    if (chart) chart.after(note);
+    else panel.append(note);
+  }
+}
+const tabButtons = [...$('stat-tabs').children];
+function activateTab(control) {
+  statTab = control.dataset.tab;
+  for (const tab of tabButtons) {
+    tab.setAttribute('aria-selected', String(tab === control));
+    tab.tabIndex = tab === control ? 0 : -1;
+  }
+  renderStatistics();
+}
+for (const tab of tabButtons) tab.addEventListener('click', () => activateTab(tab));
+$('stat-tabs').addEventListener('keydown', event => {
+  const current = tabButtons.indexOf(document.activeElement);
+  const index = {
+    ArrowLeft:(current + tabButtons.length - 1) % tabButtons.length,
+    ArrowRight:(current + 1) % tabButtons.length,
+    Home:0, End:tabButtons.length - 1
+  }[event.key];
+  if (index === undefined) return;
+  event.preventDefault();
+  activateTab(tabButtons[index]);
+  tabButtons[index].focus();
+});
 
 function renderChoices(id, options, current, select) {
+
   const group = $(id);
   const previousFocus = [...group.children].indexOf(document.activeElement);
-  group.replaceChildren(...options.map(({value, label, hint}) => {
+  group.replaceChildren(...options.map(({value, label}) => {
     const choice = button(label, 'choice', () => {
       select(value);
       $('entry-msg').textContent = '';
       if (document.activeElement !== choice) choice.focus({preventScroll:true});
       renderEntry();
     });
-    if (hint) choice.append(element('small', hint));
     choice.setAttribute('aria-pressed', String(current === value));
     return choice;
   }));
@@ -521,6 +1099,8 @@ function renderChoices(id, options, current, select) {
 }
 function renderEntry() {
   const accounts = state.accounts.map(a => ({value:a.id, label:a.name}));
+  const selection = entrySelection[type];
+  source = selection.account;
   if (!accounts.some(a => a.value === source)) source = accounts[0]?.value;
   if (!accounts.some(a => a.value === destination) || destination === source) {
     destination = accounts.find(a => a.value !== source)?.value;
@@ -528,17 +1108,22 @@ function renderEntry() {
   const transfer = type === 'transfer';
   $('l-to').hidden = !transfer;
   $('l-cat').hidden = transfer;
+  $('entry-oneoff-row').hidden = type !== 'expense';
   $('t-acc').textContent = transfer ? '转出账户' : type === 'income' ? '收入到' : '从哪个账户付';
   $('t-cat').textContent = type === 'income' ? '收入来源' : '分类';
   for (const tab of $('seg').children) tab.setAttribute('aria-pressed', String(tab.dataset.type === type));
-  renderChoices('acc', accounts, source, value => { source = value; });
+  renderChoices('acc', accounts, source, value => { selection.account = value; });
   if (transfer) {
     const targets = accounts.filter(a => a.value !== source);
     renderChoices('to', targets, destination, value => { destination = value; });
   } else {
     const categories = type === 'income' ? INCOME : EXPENSE;
-    renderChoices('cat', categories.map(label => ({value:label,label,hint:CATEGORY_HINTS.get(label)})),
-      selectedCategory[type], value => { selectedCategory[type] = value; });
+    if (!categories.includes(selection.category)) selection.category = categories[0];
+    renderChoices('cat', categories.map(label => ({value:label,label})),
+      selection.category, value => { selection.category = value; });
+    const hint = CATEGORY_HINTS.get(selection.category);
+    $('category-hint').textContent = hint ?? '';
+    $('category-hint').hidden = !hint;
   }
 }
 $('seg').addEventListener('click', event => {
@@ -549,15 +1134,30 @@ $('seg').addEventListener('click', event => {
   renderEntry();
 });
 const sheet = $('entry');
+function fitEntryViewport() {
+  if (!sheet.open || !window.visualViewport) return;
+  sheet.style.setProperty('--entry-top', window.visualViewport.offsetTop + 'px');
+  sheet.style.setProperty('--entry-height', window.visualViewport.height + 'px');
+}
+window.visualViewport?.addEventListener('resize', fitEntryViewport);
+window.visualViewport?.addEventListener('scroll', fitEntryViewport);
+$('date-today').addEventListener('click', () => { $('date').value = today(); });
+$('date-yesterday').addEventListener('click', () => { $('date').value = today(-1); });
 $('open-entry').addEventListener('click', () => {
   if (sheet.open) return;
+  entrySelection = {expense:{...prefs.expense}, income:{...prefs.income}, transfer:{}};
+  destination = undefined;
+  $('date').value = today();
+  $('entry-oneoff').checked = false;
   savedScroll = window.scrollY;
   document.body.style.top = `-${savedScroll}px`;
   document.body.classList.add('sheet-open');
   renderEntry();
   $('entry-msg').textContent = '';
-  $('entry-panel').scrollTop = 0;
   sheet.showModal();
+  $('entry-scroll').scrollTop = 0;
+  $('amt').focus({preventScroll:true});
+  fitEntryViewport();
 });
 function closeEntry() {
   sheet.close();
@@ -600,14 +1200,25 @@ $('entry-form').addEventListener('submit', event => {
   while (ids.has(String(id))) id++;
   const tx = {id, date, type, amt:amount, acc:source, note:$('note').value.trim()};
   if (type === 'transfer') tx.to = destination;
-  else tx.cat = selectedCategory[type];
+  else tx.cat = entrySelection[type].category;
+  if (type === 'expense' && $('entry-oneoff').checked) tx.oneoff = true;
   if (!save({...state, tx:[...state.tx, tx]})) {
     message.textContent = storageError;
     return;
   }
+  if (type !== 'transfer') {
+    prefs[type] = {account:source, category:tx.cat};
+    if (!demo) {
+      try { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)); } catch {}
+    }
+  }
   const entryMonth = date.slice(0, 7);
-  if (month !== entryMonth) resetExpansion();
-  month = entryMonth;
+  if (month !== entryMonth && entryMonth <= today().slice(0, 7)) {
+    month = entryMonth;
+    expandDays = false;
+    selectedSlice = null;
+    selectedDay = null;
+  }
   $('amt').value = $('note').value = '';
   closeEntry();
   renderAccounts();
@@ -616,6 +1227,7 @@ $('entry-form').addEventListener('submit', event => {
 });
 
 $('exp').addEventListener('click', () => {
+  if (demo) return;
   const backup = $('bk');
   backup.value = JSON.stringify(state);
   backup.focus();
@@ -623,6 +1235,7 @@ $('exp').addEventListener('click', () => {
   $('backup-msg').textContent = '备份已生成，可以复制保存。';
 });
 $('imp').addEventListener('click', () => {
+  if (demo) return;
   const status = $('backup-msg');
   let backup;
   try {
@@ -636,13 +1249,19 @@ $('imp').addEventListener('click', () => {
     status.textContent = storageError;
     return;
   }
-  resetExpansion();
+  expandDays = false;
+  selectedSlice = null;
+  selectedDay = null;
   renderAccounts();
   renderManagement();
   renderMonth();
   status.textContent = '已从备份恢复。';
 });
-$('date').value = today();
+$('demo-banner').hidden = !demo;
+if (demo) {
+  $('exp').disabled = $('imp').disabled = $('bk').disabled = true;
+  $('backup-msg').textContent = '演示模式下停用备份和恢复。';
+}
 renderAccounts();
 renderManagement();
 renderMonth();
