@@ -9,11 +9,10 @@
 <title>记账本</title>
 <style>
 :root {
-  --bg:#eef1f4; --card:#fff; --ink:#1b2733; --mute:#66737f; --line:#d9dfe5;
-  --flow-red:#a92936; --flow-green:#176441; --danger:#b3202c; --acc:#2f5da8; --accbg:#e4ebf7;
+  --bg:#eef1f4; --card:#fff; --ink:#1b2733; --mute:#55626e; --line:#d9dfe5;
+  --flow-red:#a92936; --flow-green:#176441; --warn:#805000; --danger:#b3202c; --acc:#2f5da8; --accbg:#e4ebf7;
   --in:var(--flow-red); --out:var(--flow-green);
-  --chart-1:#18457e; --chart-2:#6695ce; --chart-3:#2e619f; --chart-4:#8bb0d9;
-  --chart-5:#457ab9; --chart-6:#a9c6e5; --chart-7:#254e8d; --chart-8:#567ead;
+  --fab-size:56px; --fab-gap:12px;
   color-scheme:light;
   padding-top:env(safe-area-inset-top, 0px);
 }
@@ -21,22 +20,18 @@
 @media (prefers-color-scheme:dark) {
   :root:not([data-theme="light"]) {
     --bg:#11161c; --card:#1a212a; --ink:#e6ebf0; --mute:#93a0ac; --line:#2b3541;
-    --flow-red:#ff939a; --flow-green:#65d4a0; --danger:#ff8189; --acc:#7ea6ea; --accbg:#22314a; color-scheme:dark;
-    --chart-1:#b1cff9; --chart-2:#527eb9; --chart-3:#92b8ed; --chart-4:#4269a1;
-    --chart-5:#749fdf; --chart-6:#365685; --chart-7:#a1b8db; --chart-8:#6586b0;
+    --flow-red:#ff939a; --flow-green:#65d4a0; --warn:#f9c76d; --danger:#ff8189; --acc:#7ea6ea; --accbg:#22314a; color-scheme:dark;
   }
 }
 :root[data-theme="dark"] {
   --bg:#11161c; --card:#1a212a; --ink:#e6ebf0; --mute:#93a0ac; --line:#2b3541;
-  --flow-red:#ff939a; --flow-green:#65d4a0; --danger:#ff8189; --acc:#7ea6ea; --accbg:#22314a; color-scheme:dark;
-  --chart-1:#b1cff9; --chart-2:#527eb9; --chart-3:#92b8ed; --chart-4:#4269a1;
-  --chart-5:#749fdf; --chart-6:#365685; --chart-7:#a1b8db; --chart-8:#6586b0;
+  --flow-red:#ff939a; --flow-green:#65d4a0; --warn:#f9c76d; --danger:#ff8189; --acc:#7ea6ea; --accbg:#22314a; color-scheme:dark;
 }
 *, *::before, *::after { box-sizing:border-box }
 [hidden] { display:none !important }
 body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.4 "PingFang SC","Noto Sans SC","Microsoft YaHei",system-ui,sans-serif }
 body.sheet-open { position:fixed; inset-inline:0; overflow:hidden }
-main { max-width:720px; margin:auto; padding:12px 12px calc(88px + env(safe-area-inset-bottom, 0px)) }
+main { max-width:720px; margin:auto; padding:12px 12px calc(var(--fab-size) + 2 * var(--fab-gap) + env(safe-area-inset-bottom, 0px)) }
 h1, h2, h3, p { margin:0 }
 h1 { color:var(--mute); font-size:14px; font-weight:600 }
 h2 { font-size:16px }
@@ -51,17 +46,23 @@ button { color:var(--ink); background:var(--card); border:1px solid var(--line);
 :focus-visible { outline:2px solid var(--acc); outline-offset:2px }
 button.primary, .fab { background:var(--acc); color:var(--card); border-color:var(--acc); font-weight:700 }
 button.secondary { color:var(--acc); font-weight:600 }
-button:disabled { color:var(--mute); opacity:.55; cursor:default }
+button:disabled { color:var(--mute); background:var(--bg); cursor:default }
 button.icon { width:44px; padding:0; font-size:21px; line-height:1 }
 button.quiet { border-color:transparent; background:transparent; color:var(--mute) }
 input, textarea, select { width:100%; min-width:0; min-height:44px; font-size:16px; color:var(--ink); background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:8px; margin:0 }
+input::placeholder, textarea::placeholder { color:var(--mute); opacity:1 }
 input[type="date"] { display:block; appearance:none; -webkit-appearance:none }
 textarea { margin:8px 0; resize:vertical; min-height:92px }
 label, legend { color:var(--mute); font-size:14px }
 label { display:grid; gap:4px; min-width:0 }
-.in { color:var(--in) }
-.out { color:var(--out) }
-.danger, button.danger:not(:disabled), .status.danger { color:var(--danger) }
+[data-money="income"], [data-money="net-pos"] { --money-color:var(--in) }
+[data-money="expense"], [data-money="net-neg"] { --money-color:var(--out) }
+[data-money="neutral"] { --money-color:var(--ink) }
+[data-money="warn"] { --money-color:var(--warn) }
+[data-money="danger"] { --money-color:var(--danger) }
+[data-money] { color:var(--money-color) }
+.balance-warning { display:inline-block; border:1px solid var(--line); border-radius:4px; padding:0 4px; font-size:12px }
+.version { color:var(--mute); font-size:12px; text-align:center }
 .empty, .status { color:var(--mute); font-size:14px }
 .status:not(:empty) { margin-top:6px }
 .accs, .sum { display:grid; grid-template-columns:repeat(2,1fr); gap:6px }
@@ -93,8 +94,9 @@ label { display:grid; gap:4px; min-width:0 }
 .more { width:100%; margin-top:8px }
 .day { display:flex; justify-content:space-between; gap:8px; color:var(--mute); font-size:13px; margin:10px 0 0; padding-bottom:4px; border-bottom:1px solid var(--line); overflow-wrap:anywhere }
 .tx { display:grid; grid-template-columns:minmax(0,1fr) auto 44px; align-items:center; gap:5px; padding:2px 0; overflow-wrap:anywhere }
-.tx.expense-row { grid-template-columns:minmax(0,1fr) auto 44px 44px }
-.tx .money { font-weight:600; max-width:32vw; text-align:right }
+.tx.expense-row { grid-template-columns:minmax(0,1fr) auto 76px 44px }
+.tx .money { font-weight:600; max-width:min(25vw, 140px); text-align:right }
+.tx .tx-remove { color:var(--mute) }
 .tx small { display:block; color:var(--mute); font-size:13px }
 .transfer-note { font-size:13px; margin-top:8px }
 .settings { padding-block:0 }
@@ -107,19 +109,19 @@ details[open] > summary::after { transform:rotate(225deg); margin-bottom:0 }
 .managed-row:last-child { border-bottom:0; padding-bottom:0 }
 .managed-row label { overflow-wrap:anywhere }
 .actions { display:flex; flex-wrap:wrap; gap:8px }
-.fab-wrap { position:fixed; bottom:12px; right:calc(12px + env(safe-area-inset-right, 0px)); padding-bottom:env(safe-area-inset-bottom, 0px); z-index:2 }
-.fab { width:56px; height:56px; padding:0; border-radius:50%; font-size:28px; line-height:1 }
+.fab-wrap { position:fixed; bottom:var(--fab-gap); right:calc(var(--fab-gap) + env(safe-area-inset-right, 0px)); padding-bottom:env(safe-area-inset-bottom, 0px); z-index:2 }
+.fab { width:var(--fab-size); height:var(--fab-size); padding:0; border-radius:50%; font-size:28px; line-height:1 }
 .toast { position:fixed; z-index:3; bottom:calc(76px + env(safe-area-inset-bottom, 0px)); left:50%; transform:translateX(-50%); max-width:calc(100% - 24px); border-radius:8px; padding:8px 14px; color:var(--card); background:var(--ink); text-align:center; pointer-events:none }
-.toast-error { color:var(--danger); background:var(--card); border:1px solid var(--danger) }
+.toast[data-money="danger"] { color:var(--money-color); background:var(--card); border:1px solid var(--line) }
 #undo-home { position:fixed; z-index:4; inset-inline:12px; bottom:calc(76px + env(safe-area-inset-bottom, 0px)); pointer-events:none }
 #undo-notices { display:grid; justify-items:center; gap:4px }
 #undo-notices:not(:empty) { margin-bottom:4px }
 .undo-notice { display:flex; align-items:center; gap:8px; padding:2px 4px 2px 12px; border:1px solid var(--line); border-radius:8px; color:var(--ink); background:var(--accbg); pointer-events:auto }
-.confirm-dialog { width:min(calc(100% - 24px), 400px); padding:16px; border:1px solid var(--danger); border-radius:12px; color:var(--ink); background:var(--card) }
+.confirm-dialog { width:min(calc(100% - 24px), 400px); padding:16px; border:1px solid var(--line); border-radius:12px; color:var(--ink); background:var(--card) }
 .confirm-dialog::backdrop { background:var(--ink); opacity:.5 }
 .confirm-dialog p { margin-block:8px 12px; overflow-wrap:anywhere }
 .confirm-dialog .actions { justify-content:flex-end }
-.confirm-dialog button.danger { border-color:var(--danger) }
+.confirm-dialog button[data-money="danger"] { border-color:var(--money-color); font-weight:700 }
 .sheet { position:fixed; inset:var(--entry-top, 0px) 0 auto; width:100%; height:var(--entry-height, 100%); max-width:none; max-height:none; margin:0; border:0; padding:0; background:transparent; color:var(--ink); overflow:hidden }
 .sheet[open] { display:flex; justify-content:center; align-items:flex-end }
 .sheet::backdrop { background:var(--ink); opacity:.5 }
@@ -142,15 +144,17 @@ legend { padding:0; margin-bottom:4px }
 .category-hint, .chart-note { color:var(--mute); font-size:12px; margin-top:6px }
 .check-row { display:flex; gap:6px; align-items:center; min-height:44px; font-size:14px; cursor:pointer }
 .check-row input { flex:none; width:44px; min-width:44px; height:44px; padding:0; appearance:none; display:grid; place-items:center; background:none; border:0; cursor:pointer }
-.check-row:has(input:disabled) { opacity:.6; cursor:default }
+.check-row:has(input:disabled) { cursor:default }
 .check-row input:disabled { cursor:default }
 .check-row input::before { content:""; width:36px; height:22px; border:1px solid var(--mute); background:var(--bg); border-radius:12px; grid-area:1/1 }
 .check-row input::after { content:""; width:14px; height:14px; background:var(--mute); border-radius:50%; grid-area:1/1; transform:translateX(-7px) }
 .check-row input:checked::before { background:var(--acc); border-color:var(--acc) }
 .check-row input:checked::after { background:var(--card); transform:translateX(7px) }
 .demo-banner { background:var(--accbg); color:var(--ink); padding:8px 12px; border-radius:8px; margin-bottom:8px }
+.demo-banner a { color:var(--acc); display:inline-grid; place-items:center; min-width:44px; min-height:44px }
 .guide { font-size:14px }
-.stats-heading, .stats-tools, .detail-heading, .day-controls { display:flex; justify-content:space-between; align-items:center; gap:6px }
+.stats-tools, .detail-heading, .day-controls { display:flex; justify-content:space-between; align-items:center; gap:6px }
+.stats-filter { width:max-content; max-width:calc(100% - var(--fab-size) - var(--fab-gap) - env(safe-area-inset-right, 0px)) }
 .stat-tabs { grid-template-columns:repeat(4,minmax(0,1fr)); margin-block:4px 10px }
 .stats-tools { flex-wrap:wrap; margin-bottom:6px }
 .stats-tools .choices { display:flex; margin-inline-start:auto }
@@ -164,14 +168,18 @@ legend { padding:0; margin-bottom:4px }
 .chart-figure text { fill:var(--mute); font-size:11px; font-variant-numeric:tabular-nums }
 .chart-figure .chart-value { fill:var(--ink); font-weight:600 }
 .chart-figure .chart-grid { stroke:var(--line); stroke-width:1 }
-.chart-figure .average-line { stroke:var(--out); stroke-width:1.5; stroke-dasharray:4 4 }
+.chart-figure text[data-money], .chart-figure rect[data-money]:not(.asset-segment) { fill:currentColor }
+.chart-figure .average-line { stroke:currentColor; stroke-width:1.5; stroke-dasharray:4 4 }
 .chart-figure .selected-bar { stroke:var(--ink); stroke-width:1 }
-.chart-figure .cumulative-line { fill:none; stroke:var(--out); stroke-width:2 }
+.chart-figure .cumulative-line { fill:none; stroke:currentColor; stroke-width:2 }
 .chart-figure .cumulative-prior { stroke-dasharray:5 4; opacity:.65 }
-.chart-figure .cumulative-point { fill:var(--out); stroke:var(--card); stroke-width:1.5 }
+.chart-figure .cumulative-point { fill:currentColor; stroke:var(--card); stroke-width:1.5 }
+.chart-figure .donut-arc { fill:none; stroke:var(--chart-tone) }
+.chart-figure .asset-segment { fill:var(--chart-tone) }
+.chart-toned { --chart-tone:color-mix(in srgb, currentColor var(--tone, 100%), var(--card)) }
 .chart-legend { display:flex; flex-wrap:wrap; gap:4px 12px; color:var(--mute); font-size:13px }
-.chart-legend span::before { content:""; display:inline-block; width:16px; margin-inline-end:5px; vertical-align:middle; border-top:2px solid var(--out) }
-.chart-legend .prior::before { border-top-style:dashed; opacity:.65 }
+.chart-legend i { display:inline-block; width:16px; margin-inline-end:5px; vertical-align:middle; border-top:2px solid currentColor }
+.chart-legend .prior i { border-top-style:dashed; opacity:.65 }
 .chart-tooltip { position:absolute; z-index:1; width:max-content; max-width:100%; padding:6px 8px; background:var(--accbg); border:1px solid var(--line); color:var(--ink); border-radius:8px; font-size:14px; overflow-wrap:anywhere; pointer-events:none }
 .month-hits { position:absolute; inset:0; display:grid; grid-template-columns:repeat(6,1fr) }
 .month-hits button { background:transparent; border-color:transparent; padding:0 }
@@ -182,27 +190,28 @@ legend { padding:0; margin-bottom:4px }
 .rank-badge { display:grid; place-items:center; width:24px; height:24px; border-radius:50%; background:var(--accbg); color:var(--ink); font-size:12px }
 .rank-name { display:grid; gap:4px; overflow-wrap:anywhere }
 .rank-track { height:3px; border-radius:4px; overflow:hidden; background:var(--line) }
-.rank-track i { display:block; height:100% }
+.rank-track i { display:block; height:100%; background:var(--chart-tone) }
 .rank-percent { font-size:12px; color:var(--mute) }
 .asset-row, .top-row { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:6px; padding:8px 0; border-bottom:1px solid var(--line); overflow-wrap:anywhere }
 .asset-row:last-child, .top-row:last-child { border-bottom:0 }
 .asset-row small, .top-row small { display:block; color:var(--mute); font-size:12px }
-.asset-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-inline-end:6px }
+.asset-balance { display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:4px }
+.asset-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-inline-end:6px; background:var(--chart-tone) }
 .stat-detail { border-top:1px solid var(--line); margin-top:12px; padding-top:4px }
 .tx-title { min-width:0 }
-.tx-flag { color:var(--mute); background:transparent; border-color:transparent; padding:2px 0; font-size:12px }
-.tx-flag[aria-pressed="true"] { color:var(--acc); background:var(--accbg) }
-.top-tag { color:var(--acc); margin-inline-start:6px; font-size:12px }
-#entry-msg:not(:empty) { color:var(--danger) }
+.tx-flag { background:transparent; border-color:transparent; padding:2px 0; font-size:12px }
+.tx-flag[aria-pressed="true"] { background:var(--bg) }
+.top-tag { margin-inline-start:6px; font-size:12px }
+.status[data-money="danger"] { color:var(--money-color) }
 #entry-msg:empty { display:none }
 @media (max-width:420px) { .cat-choices { grid-template-columns:repeat(3,minmax(0,1fr)) } }
 </style>
 </head>
 <body>
 <main>
-  <p class="demo-banner" id="demo-banner" hidden>演示模式：数据不会保存，去掉网址里的 ?demo=1 即可回到正常使用</p>
+  <p class="demo-banner" id="demo-banner" hidden>演示模式：数据不会保存。<a href="?demo=1">负数</a> · <a href="?demo=1&amp;scenario=positive">正数</a> · <a href="?demo=1&amp;scenario=zero">零值</a></p>
   <h1>总资产（所有账户合计）</h1>
-  <p class="total money" id="total">0.00</p>
+  <p class="total money" id="total" data-money="neutral">0.00</p>
   <section class="panel guide" id="guide" aria-labelledby="guide-title" hidden>
     <h2 id="guide-title">开始记账</h2>
     <p>第一步：点账户卡片右上角的“⋯”，设置每个账户现在的余额。</p>
@@ -230,13 +239,13 @@ legend { padding:0; margin-bottom:4px }
       <button class="icon" type="button" id="day-next" aria-label="后一天">›</button>
       <details class="day-actions" id="day-actions">
         <summary aria-label="当日操作">⋯</summary>
-        <button class="danger" type="button" id="clear-day">清空这一天</button>
+        <button type="button" id="clear-day">清空这一天</button>
       </details>
     </div>
     <div class="sum">
-      <div><small>当日支出</small><b class="money out" id="day-out"></b></div>
-      <div><small>当日收入</small><b class="money in" id="day-in"></b></div>
-      <div><small>笔数</small><b class="money" id="day-count"></b></div>
+      <div><small>当日支出</small><b class="money" id="day-out" data-money="expense"></b></div>
+      <div><small>当日收入</small><b class="money" id="day-in" data-money="income"></b></div>
+      <div><small>笔数</small><b class="money" id="day-count" data-money="neutral"></b></div>
     </div>
     <div id="today-list"></div>
   </section>
@@ -248,18 +257,16 @@ legend { padding:0; margin-bottom:4px }
       <button class="icon" type="button" id="next" aria-label="下个月">›</button>
     </div>
     <div class="sum">
-      <div><small>本月累计收入</small><b class="money in" id="s-in"></b></div>
-      <div><small>本月累计支出</small><b class="money out" id="s-out"></b></div>
-      <div><small>日均支出</small><b class="money out" id="s-avg"></b></div>
-      <div><small>结余</small><b class="money" id="s-net"></b></div>
+      <div><small>本月累计收入</small><b class="money" id="s-in" data-money="income"></b></div>
+      <div><small>本月累计支出</small><b class="money" id="s-out" data-money="expense"></b></div>
+      <div><small>日均支出</small><b class="money" id="s-avg" data-money="expense"></b></div>
+      <div><small>结余</small><b class="money" id="s-net" data-money="neutral"></b></div>
     </div>
   </section>
 
   <section class="panel" id="stats" aria-labelledby="stats-title">
-    <div class="stats-heading">
-      <h2 id="stats-title">统计</h2>
-      <label class="check-row"><input id="exclude-oneoff" type="checkbox" role="switch">排除一次性大额</label>
-    </div>
+    <h2 id="stats-title">统计</h2>
+    <label class="check-row stats-filter"><input id="exclude-oneoff" type="checkbox" role="switch">排除一次性大额</label>
     <div class="choices stat-tabs" id="stat-tabs" role="tablist" aria-label="统计类型">
       <button class="choice" type="button" id="tab-composition" data-tab="composition" role="tab" aria-selected="true" aria-controls="stat-panel">构成</button>
       <button class="choice" type="button" id="tab-daily" data-tab="daily" role="tab" aria-selected="false" aria-controls="stat-panel" tabindex="-1">每日</button>
@@ -301,10 +308,11 @@ legend { padding:0; margin-bottom:4px }
     <div class="settings-content">
       <p class="empty">账本数据保存在当前浏览器。换设备或清理浏览器前，请先生成并保存备份。</p>
       <textarea id="bk" aria-label="备份内容" spellcheck="false"></textarea>
-      <div class="actions"><button type="button" id="exp">生成备份</button><button class="danger" type="button" id="imp">从上面的内容恢复</button></div>
+      <div class="actions"><button type="button" id="exp">生成备份</button><button type="button" id="imp">从上面的内容恢复</button></div>
       <p class="status" id="backup-msg" role="status"></p>
     </div>
   </details>
+  <footer class="version" id="version">版本 2026-11-18</footer>
 </main>
 
 <div class="fab-wrap"><button class="fab" type="button" id="open-entry" aria-label="记一笔" aria-haspopup="dialog">＋</button></div>
@@ -312,11 +320,11 @@ legend { padding:0; margin-bottom:4px }
 <div id="undo-home"><div id="undo-notices" aria-live="polite"></div></div>
 <dialog class="confirm-dialog" id="confirm-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-message">
   <form method="dialog">
-    <h2 class="danger" id="confirm-title"></h2>
+    <h2 id="confirm-title"></h2>
     <p id="confirm-message"></p>
     <div class="actions">
       <button type="submit" value="cancel" autofocus>取消</button>
-      <button class="danger" type="submit" value="confirm" id="confirm-action"></button>
+      <button data-money="danger" type="submit" value="confirm" id="confirm-action"></button>
     </div>
   </form>
 </dialog>
@@ -331,7 +339,7 @@ legend { padding:0; margin-bottom:4px }
         <button class="choice" type="button" data-type="transfer" aria-pressed="false">转账</button>
       </div>
       <div class="fields">
-        <label>金额<input id="amt" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" required autofocus></label>
+        <label>金额<input id="amt" data-money="neutral" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" required autofocus></label>
         <div>
           <label>日期<input id="date" type="date" required></label>
           <div class="date-shortcuts"><button type="button" id="date-today">今天</button><button type="button" id="date-yesterday">昨天</button></div>
@@ -344,7 +352,7 @@ legend { padding:0; margin-bottom:4px }
       <label>备注<input id="note" placeholder="可不填"></label>
       </div>
       <div class="entry-footer">
-      <p class="status" id="entry-msg" role="alert"></p>
+      <p class="status" id="entry-msg" data-money="danger" role="alert"></p>
       <button class="primary" type="submit" id="add">记下</button>
       </div>
     </form>
@@ -370,6 +378,8 @@ const money = n => (Object.is(n, -0) ? 0 : n).toLocaleString('zh-CN', {
   minimumFractionDigits:2, maximumFractionDigits:2
 });
 const pad = n => String(n).padStart(2, '0');
+const roundMoney = n => Math.round(n * 100) / 100;
+const netRole = n => n > 0 ? 'net-pos' : n < 0 ? 'net-neg' : 'neutral';
 const signed = (n, format = money) => (n < 0 ? '−' : n > 0 ? '+' : '') + format(Math.abs(n));
 function dayKey(date) {
   return `${String(date.getFullYear()).padStart(4, '0')}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
@@ -399,6 +409,16 @@ function element(tag, text, className) {
   if (text !== undefined) node.textContent = text;
   if (className) node.className = className;
   return node;
+}
+function moneyNode(tag, text, role = 'neutral', className = 'money') {
+  const node = element(tag, text, className);
+  node.dataset.money = role;
+  return node;
+}
+function setNet(node, amount) {
+  const value = roundMoney(amount);
+  node.dataset.money = netRole(value);
+  node.textContent = signed(value);
 }
 function button(text, className, run) {
   const node = element('button', text, className);
@@ -438,7 +458,6 @@ function elapsedDays(key) {
 }
 function demoLedger() {
   const data = emptyLedger();
-  [260, 9600, 650].forEach((open, index) => { data.accounts[index].open = open; });
   for (let offset = -5; offset <= 0; offset++) {
     const key = monthOffset(today().slice(0, 7), offset);
     const days = elapsedDays(key);
@@ -450,6 +469,7 @@ function demoLedger() {
     record(7, 'income', 18, 'a1', {cat:'外卖返利'});
     record(12, 'income', 36 + offset, 'a2', {cat:'理财收益'});
     for (let day = 1; day <= days; day++) {
+      if (day === 16) continue;
       const cat = ['餐饮','外卖','交通'][day % 3];
       record(day, 'expense', 18 + (day * 7 + offset + 5) % 32, day % 2 ? 'a1' : 'a2', {cat});
     }
@@ -458,7 +478,27 @@ function demoLedger() {
     record(10, 'expense', 9.9, 'a1', {cat:'购物'});
     record(3, 'transfer', 800, 'a2', {to:'a1', note:'日常开销'});
     record(8, 'transfer', 180, 'a2', {to:'a3', note:'存入小荷包'});
-    if (offset === 0) record(12, 'expense', 10000, 'a2', {cat:'学习', note:'课程学费（演示）', oneoff:true});
+    if (offset === 0) {
+      record(12, 'expense', 10000, 'a2', {cat:'学习', note:'课程学费（演示）', oneoff:true});
+      record(days, 'income', 25, 'a1', {cat:'直播', note:'直播结算'});
+      record(days, 'transfer', 14, 'a2', {to:'a1'});
+    }
+  }
+  const key = today().slice(0, 7);
+  const fixture = new URLSearchParams(location.search).get('scenario');
+  if (fixture === 'positive' || fixture === 'zero') {
+    const current = data.tx.filter(tx => tx.date.slice(0, 7) === key);
+    const {income, expense} = dayTotals(current);
+    data.tx.push({id:data.tx.length + 1, date:today(), type:'income', amt:roundMoney(expense - income + (fixture === 'positive' ? 500 : 0)), acc:'a2', cat:'工资'});
+  }
+  const targets = fixture === 'positive' ? [-9.9, 760, -247.9] :
+    fixture === 'zero' ? [-9.9, 257.8, -247.9] : [-9.9, -32, -247.9, 1.15];
+  if (targets.length > data.accounts.length) data.accounts.push({id:'a4',name:'零钱',open:0});
+  for (const [index, account] of data.accounts.entries()) {
+    const change = data.tx.reduce((sum, tx) => sum +
+      (tx.acc === account.id ? (tx.type === 'income' ? tx.amt : -tx.amt) : 0) +
+      (tx.type === 'transfer' && tx.to === account.id ? tx.amt : 0), 0);
+    account.open = roundMoney(targets[index] - change);
   }
   return data;
 }
@@ -520,16 +560,19 @@ function showToast(text, error = false) {
   const toast = $('toast');
   clearTimeout(toastTimer);
   toast.classList.add('toast');
-  toast.classList.toggle('toast-error', error);
+  if (error) toast.dataset.money = 'danger';
+  else delete toast.dataset.money;
   toast.textContent = text;
   toastTimer = setTimeout(() => {
-    toast.classList.remove('toast', 'toast-error');
+    toast.classList.remove('toast');
+    delete toast.dataset.money;
     toast.textContent = '';
   }, 2000);
 }
 function showStatus(id, text, error = false) {
   const status = $(id);
-  status.classList.toggle('danger', error);
+  if (error) status.dataset.money = 'danger';
+  else delete status.dataset.money;
   status.textContent = text;
 }
 const confirmation = $('confirm-dialog');
@@ -545,14 +588,16 @@ confirmation.addEventListener('cancel', () => { confirmRun = undefined; });
 function confirmAction(title, message, action, run) {
   if (confirmation.open) return;
   $('confirm-title').textContent = title;
-  $('confirm-message').textContent = message;
+  if (Array.isArray(message)) $('confirm-message').replaceChildren(...message);
+  else $('confirm-message').textContent = message;
   $('confirm-action').textContent = action;
   confirmRun = run;
   confirmation.showModal();
 }
-function balanceStyle(amount) {
-  return amount < 0 ? 'money danger' : 'money';
+function balanceWarning() {
+  return moneyNode('span', '负余额', 'warn', 'balance-warning');
 }
+const balanceAmount = amount => amount < 0 ? signed(amount) : money(amount);
 function balances() {
   const result = new Map(state.accounts.map(a => [a.id, Number(a.open) || 0]));
   function add(id, amount) {
@@ -571,8 +616,9 @@ function renderAccounts() {
   const cards = state.accounts.map(a => {
     const card = element('div', undefined, 'acc-card');
     const info = element('div');
-    const balance = result.get(a.id);
-    info.append(element('span', a.name, 'acc-name'), element('b', money(balance), balanceStyle(balance)));
+    const balance = roundMoney(result.get(a.id));
+    info.append(element('span', a.name, 'acc-name'), moneyNode('b', balanceAmount(balance)));
+    if (balance < 0) info.append(balanceWarning());
     const manage = button('⋯', 'icon quiet', () => {
       $('account-management').open = true;
       const row = $('managed-accounts').children[state.accounts.indexOf(a)];
@@ -586,8 +632,7 @@ function renderAccounts() {
   for (const card of $('accs').querySelectorAll('.acc-card')) card.remove();
   addAccount.before(...cards);
   const total = [...result.values()].reduce((sum, value) => sum + value, 0);
-  $('total').textContent = money(total);
-  $('total').classList.toggle('danger', total < 0);
+  setNet($('total'), total);
   $('guide').hidden = state.tx.length > 0 || state.accounts.some(a => Number(a.open));
 }
 function renderManagement() {
@@ -597,6 +642,7 @@ function renderManagement() {
     const label = element('label', `${a.name} · 起始余额`);
     const input = element('input');
     input.type = 'number';
+    input.dataset.money = 'neutral';
     input.step = '0.01';
     input.inputMode = 'decimal';
     input.value = Number(a.open) || 0;
@@ -612,20 +658,24 @@ function renderManagement() {
         showStatus('managed-msg', storageError, true);
       }
     });
-    const remove = button('删除账户', 'quiet danger', () => {
+    const remove = button('删除账户', 'quiet', () => {
       const usesAccount = t => t.acc === a.id || t.to === a.id;
       if (state.tx.some(usesAccount) || [...pendingClears].some(clear => clear.entries.some(usesAccount))) {
         showStatus('managed-msg', '这个账户已有记录或有待撤销的记录，不能删除。', true);
       } else if (state.accounts.length < 2) {
         showStatus('managed-msg', '至少保留一个账户。', true);
-      } else if (save({...state, accounts:state.accounts.filter(account => account.id !== a.id)})) {
-        renderAccounts();
-        renderManagement();
-        if (statTab === 'assets') renderStatistics();
-        $('account-management').querySelector('summary').focus();
-        showStatus('managed-msg', '已删除账户。');
       } else {
-        showStatus('managed-msg', storageError, true);
+        confirmAction('删除账户', '确定删除「' + a.name + '」吗？', '确认删除', () => {
+          if (!save({...state, accounts:state.accounts.filter(account => account.id !== a.id)})) {
+            showStatus('managed-msg', storageError, true);
+            return;
+          }
+          renderAccounts();
+          renderManagement();
+          if (statTab === 'assets') renderStatistics();
+          $('account-management').querySelector('summary').focus();
+          showStatus('managed-msg', '已删除账户。');
+        });
       }
     });
     remove.setAttribute('aria-label', `删除账户 ${a.name}`);
@@ -718,29 +768,32 @@ function transactionNodes(groups, container, showDate = true) {
       const header = element('h3', undefined, 'day');
       const expense = entries.reduce((sum, t) => sum + (t.type === 'expense' ? Number(t.amt) : 0), 0);
       header.append(element('span', date));
-      if (expense) header.append(element('span', '支出 ' + money(expense), 'money out'));
+      if (expense) header.append(moneyNode('span', '支出 ' + money(expense), 'expense'));
       group.append(header);
     }
     for (const t of entries) {
       const category = categoryName(t);
       const row = element('div', undefined, 'tx');
       const transfer = t.type === 'transfer';
-      const title = element('div', t.note || (transfer ? '账户间转账' : category), 'tx-title');
       const from = accountName(t.acc);
-      title.append(element('small', transfer ? '转账 ' + from + ' → ' + accountName(t.to) : category + ' · ' + from));
+      const name = transfer ? '转账' : category;
+      const account = transfer ? from + ' → ' + accountName(t.to) : from;
+      const title = element('div', t.note || name, 'tx-title');
+      title.append(element('small', t.note ? name + ' · ' + account : account));
       row.append(title);
       const sign = t.type === 'income' ? '+' : t.type === 'expense' ? '−' : '';
-      const amount = element('span', sign + money(Number(t.amt)), transfer ? 'money' : 'money ' + (t.type === 'income' ? 'in' : 'out'));
+      const amount = moneyNode('span', sign + money(Number(t.amt)), transfer ? 'neutral' : t.type);
       row.append(amount);
       if (t.type === 'expense') {
         row.classList.add('expense-row');
-        const flag = button(isOneoff(t) ? '一次性' : '标记', 'tx-flag', () => toggleOneoff(t, container));
-        flag.setAttribute('aria-label', isOneoff(t) ? '取消一次性标记' : '标记为一次性大额');
+        const flag = button(isOneoff(t) ? '一次性 ✓' : '设为一次性', 'tx-flag', () => toggleOneoff(t, container));
+        flag.dataset.money = 'neutral';
+        flag.setAttribute('aria-label', isOneoff(t) ? '一次性 ✓，点击取消' : '设为一次性');
         flag.setAttribute('aria-pressed', String(isOneoff(t)));
         flag.dataset.txId = t.id;
         row.append(flag);
       }
-      const remove = button('×', 'icon quiet danger', () => {
+      const remove = button('×', 'icon quiet tx-remove', () => confirmAction('删除这笔记录', '确定删除这笔记录吗？账户余额会随之变化。', '确认删除', () => {
         if (save({...state, tx:state.tx.filter(entry => entry !== t)})) {
           renderLedger();
           const focusId = {'today-list':'today-date', list:'list-title'}[container.id] ?? 'stat-panel';
@@ -748,7 +801,7 @@ function transactionNodes(groups, container, showDate = true) {
         } else {
           showToast(storageError, true);
         }
-      });
+      }));
       remove.setAttribute('aria-label', '删除这笔');
       row.append(remove);
       group.append(row);
@@ -867,7 +920,11 @@ $('clear-day').addEventListener('click', () => {
   const entries = before.filter(tx => tx.date === date);
   if (!entries.length) return;
   const totals = dayTotals(entries);
-  confirmAction('清空这一天', `将删除 ${dayLabel(date)} 的 ${entries.length} 笔记录（支出 ¥${money(totals.expense)}，收入 ¥${money(totals.income)}，转账 ${totals.transfer} 笔）。账户余额会随之变化。确定吗？`, '清空这一天', () => {
+  confirmAction('清空这一天', [
+    `将删除 ${dayLabel(date)} 的 ${entries.length} 笔记录（支出 `, moneyNode('span', '¥' + money(totals.expense), 'expense'),
+    '，收入 ', moneyNode('span', '¥' + money(totals.income), 'income'),
+    `，转账 ${totals.transfer} 笔）。账户余额会随之变化。确定吗？`
+  ], '清空这一天', () => {
     if (!save({...state, tx:state.tx.filter(tx => tx.date !== date)})) {
       showToast(storageError, true);
       return;
@@ -917,9 +974,9 @@ function renderTopExpenses(entries) {
   list.replaceChildren(...top.map(t => {
     const row = element('div', undefined, 'top-row');
     const info = element('div', t.note || categoryName(t));
-    if (isOneoff(t)) info.append(element('span', '一次性', 'top-tag'));
+    if (isOneoff(t)) info.append(moneyNode('span', '一次性', 'neutral', 'top-tag'));
     info.append(element('small', t.date));
-    row.append(info, element('b', '−¥' + money(Number(t.amt)), 'money out'));
+    row.append(info, moneyNode('b', '−¥' + money(Number(t.amt)), 'expense'));
     return row;
   }));
   if (!top.length) list.append(element('p', '本月还没有支出。', 'empty'));
@@ -934,7 +991,7 @@ function renderMonth() {
   $('s-in').textContent = money(all.totals.income);
   $('s-out').textContent = money(all.totals.expense);
   $('s-avg').textContent = money(stats.average);
-  $('s-net').textContent = signed(all.totals.net);
+  setNet($('s-net'), all.totals.net);
   renderStatistics(stats);
   renderTopExpenses(all.entries);
   renderTransactions(all.entries);
@@ -958,14 +1015,12 @@ $('days-more').addEventListener('click', () => {
 $('exclude-oneoff').addEventListener('change', renderMonth);
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
-const cents = n => money(Math.round(n * 100) / 100);
+const cents = n => money(roundMoney(n));
 const percent = (amount, total) => (amount / total * 100).toFixed(1) + '%';
-const chartColor = index => 'var(--chart-' + (index % 8 + 1) + ')';
-const flowClass = metric => metric === 'expense' ? 'out' : metric === 'income' ? 'in' : '';
-const flowColor = metric => 'var(--' + (flowClass(metric) || 'ink') + ')';
-function sliceColor(metric, index) {
-  const weight = [100, 72, 88, 58, 80, 48, 65, 36][index % 8];
-  return `color-mix(in srgb, ${flowColor(metric)} ${weight}%, var(--card))`;
+function chartTone(node, index) {
+  node.classList.add('chart-toned');
+  node.style.setProperty('--tone', [100, 65, 86, 48, 74, 39, 56, 32][index % 8] + '%');
+  return node;
 }
 function svgNode(tag, attrs, text) {
   const node = document.createElementNS(SVG_NS, tag);
@@ -980,7 +1035,9 @@ function makeChart(label, viewBox, className) {
   return {figure, svg};
 }
 function caption(chart, text) {
-  chart.figure.append(element('figcaption', text, 'chart-note'));
+  const note = element('figcaption', undefined, 'chart-note');
+  note.append(...(Array.isArray(text) ? text : [text]));
+  chart.figure.append(note);
 }
 function statTools(title, options, active, change) {
   const tools = element('div', undefined, 'stats-tools');
@@ -1027,7 +1084,7 @@ function renderComposition(panel, data) {
   }
   const total = data.totals[kind];
   const ranked = [...amounts].sort((a, b) => b[1] - a[1])
-    .map(([name, amount], index) => ({name, amount, color:sliceColor(kind, index), group:false}));
+    .map(([name, amount], index) => ({name, amount, index, group:false}));
   if (total <= 0 || !ranked.length) {
     panel.append(element('p', '本月没有可统计的' + label + '。', 'empty'));
     return;
@@ -1036,7 +1093,7 @@ function renderComposition(panel, data) {
   const small = ranked.filter(row => row.amount / total < 0.01);
   if (small.length) slices.push({
     name:'更多', amount:small.reduce((sum, row) => sum + row.amount, 0),
-    color:sliceColor(kind, slices.length), group:true
+    index:slices.length, group:true
   });
   const chart = makeChart('本月' + label + '构成环形图', '0 0 232 232', 'donut');
   const ring = 2 * Math.PI * 86;
@@ -1044,19 +1101,19 @@ function renderComposition(panel, data) {
   for (const slice of slices) {
     const length = slice.amount / total * ring;
     const gap = slices.length === 1 ? 0 : Math.min(3, length * 0.35);
-    const attrs = {cx:116, cy:116, r:86, fill:'none', stroke:slice.color, 'stroke-width':30};
+    const attrs = {cx:116, cy:116, r:86, class:'donut-arc', 'data-money':kind, 'stroke-width':30};
     if (gap) Object.assign(attrs, {
       'stroke-dasharray':(length - gap) + ' ' + (ring - length + gap),
       'stroke-dashoffset':-start - gap / 2, transform:'rotate(-90 116 116)'
     });
-    const arc = svgNode('circle', attrs);
+    const arc = chartTone(svgNode('circle', attrs), slice.index);
     arc.append(svgNode('title', {}, slice.name + ' ' + percent(slice.amount, total)));
     chart.svg.append(arc);
     slice.end = (start += length) / ring;
   }
   chart.svg.append(
     svgNode('text', {x:116,y:108,'text-anchor':'middle'}, '本月' + label),
-    svgNode('text', {x:116,y:135,'text-anchor':'middle',class:'chart-value',style:'font-size:15px'}, '¥' + cents(total))
+    svgNode('text', {x:116,y:135,'text-anchor':'middle',class:'chart-value','data-money':kind,style:'font-size:15px'}, '¥' + cents(total))
   );
   caption(chart, '本月' + label + '构成：' + slices.map(row => row.name + ' ' + percent(row.amount, total)).join('、') + '。');
   const ranking = element('div', undefined, 'rank-list');
@@ -1104,13 +1161,12 @@ function renderComposition(panel, data) {
     badge.setAttribute('aria-hidden', 'true');
     const title = element('span', row.name, 'rank-name');
     const track = element('span', undefined, 'rank-track');
-    const line = element('i');
+    const line = chartTone(moneyNode('i', undefined, kind, ''), row.index);
     line.style.width = percent(row.amount, total);
-    line.style.backgroundColor = row.color;
     track.setAttribute('aria-hidden', 'true');
     track.append(line);
     title.append(track);
-    control.append(badge, title, element('b', '¥' + cents(row.amount), 'money ' + flowClass(kind)),
+    control.append(badge, title, moneyNode('b', '¥' + cents(row.amount), kind),
       element('span', percent(row.amount, total), 'rank-percent'));
     ranking.append(control);
     rankButtons.set(row.name, control);
@@ -1127,8 +1183,8 @@ function niceStep(max) {
   const scale = 10 ** Math.floor(Math.log10(raw));
   return ([1, 2, 2.5, 5, 10].find(n => n >= raw / scale) ?? 10) * scale;
 }
-function bar(svg, x, y, width, height, color, selected = false) {
-  const rect = svgNode('rect', {x, y, width, height, rx:1.5, fill:color, class:selected ? 'selected-bar' : ''});
+function bar(svg, x, y, width, height, role, selected = false) {
+  const rect = svgNode('rect', {x, y, width, height, rx:1.5, 'data-money':role, class:selected ? 'selected-bar' : ''});
   svg.append(rect);
   return rect;
 }
@@ -1164,7 +1220,7 @@ function renderDaily(panel, data) {
     const value = tick * step;
     const y = bottom - height(value);
     svg.append(svgNode('line', {x1:left,y1:y,x2:right,y2:y,class:'chart-grid'}),
-      svgNode('text', {x:left-4,y:y+4,'text-anchor':'end'}, compactAmount(value)));
+      svgNode('text', {x:left-4,y:y+4,'text-anchor':'end','data-money':'neutral'}, compactAmount(value)));
   }
   const slot = (right - left) / count;
   const xAt = index => left + slot * (index + 0.5);
@@ -1172,28 +1228,34 @@ function renderDaily(panel, data) {
   const bars = cumulative ? [] : amounts.map((amount, index) => {
     const barHeight = amount > 0 ? Math.max(3, height(amount)) : 1;
     return bar(svg, left + slot * (index + 0.16), bottom - barHeight, slot * 0.68, barHeight,
-      amount > 0 ? flowColor('expense') : 'var(--line)');
+      'expense');
   });
   for (const day of [1, 5, 10, 15, 20, 25, count]) {
     svg.append(svgNode('text', {x:left + slot * (day - 0.5),y:173,'text-anchor':'middle'}, day + '日'));
   }
-  const marker = svgNode('circle', {r:5, class:'cumulative-point'});
+  const marker = svgNode('circle', {r:5, class:'cumulative-point', 'data-money':'expense'});
   if (cumulative) {
     const linePoints = series => series.map((amount, index) => `${xAt(index)},${yAt(amount)}`).join(' ');
-    svg.append(svgNode('polyline', {points:linePoints(prior), class:'cumulative-line cumulative-prior'}),
-      svgNode('polyline', {points:linePoints(amounts), class:'cumulative-line'}),
-      svgNode('circle', {cx:xAt(amounts.length - 1), cy:yAt(amounts.at(-1)), r:3.5, class:'cumulative-point'}), marker);
+    svg.append(svgNode('polyline', {points:linePoints(prior), class:'cumulative-line cumulative-prior','data-money':'expense'}),
+      svgNode('polyline', {points:linePoints(amounts), class:'cumulative-line','data-money':'expense'}),
+      svgNode('circle', {cx:xAt(amounts.length - 1), cy:yAt(amounts.at(-1)), r:3.5, class:'cumulative-point','data-money':'expense'}), marker);
     const legend = element('div', undefined, 'chart-legend');
-    legend.append(element('span', '本月累计'), element('span', '上月同期', 'prior'));
-    caption(chart, `截至 ${amounts.length} 日累计支出 ¥${cents(amounts.at(-1))}；上月截至 ${prior.length} 日 ¥${cents(prior.at(-1))}。累计包含一次性大额，与月度汇总同口径。`);
+    for (const [label, variant] of [['本月累计', ''], ['上月同期', 'prior']]) {
+      const item = element('span', label, variant);
+      item.prepend(moneyNode('i', undefined, 'expense', ''));
+      legend.append(item);
+    }
+    caption(chart, [`截至 ${amounts.length} 日累计支出 `, moneyNode('span', '¥' + cents(amounts.at(-1)), 'expense'),
+      `；上月截至 ${prior.length} 日 `, moneyNode('span', '¥' + cents(prior.at(-1)), 'expense'),
+      '。累计包含一次性大额，与月度汇总同口径。']);
     chart.figure.prepend(legend);
   } else {
     const averageY = yAt(data.average);
-    svg.append(svgNode('line', {x1:left,y1:averageY,x2:right,y2:averageY,class:'average-line'}),
-      svgNode('text', {x:right,y:averageY-4,'text-anchor':'end',class:'chart-value'}, '日均 ¥' + cents(data.average)));
+    svg.append(svgNode('line', {x1:left,y1:averageY,x2:right,y2:averageY,class:'average-line','data-money':'expense'}),
+      svgNode('text', {x:right,y:averageY-4,'text-anchor':'end',class:'chart-value','data-money':'expense'}, '日均 ¥' + cents(data.average)));
     const highest = Math.max(...amounts);
-    caption(chart, '本月已过 ' + amounts.length + ' 天，日均支出 ¥' + cents(data.average) +
-      '，最高为 ' + (amounts.indexOf(highest) + 1) + ' 日的 ¥' + cents(highest) + '。');
+    caption(chart, ['本月已过 ' + amounts.length + ' 天，日均支出 ', moneyNode('span', '¥' + cents(data.average), 'expense'),
+      '，最高为 ' + (amounts.indexOf(highest) + 1) + ' 日的 ', moneyNode('span', '¥' + cents(highest), 'expense'), '。']);
   }
   const tip = element('p', undefined, 'chart-tooltip');
   tip.setAttribute('role', 'status');
@@ -1217,8 +1279,11 @@ function renderDaily(panel, data) {
     if (cumulative) marker.setAttribute('visibility', day === null ? 'hidden' : 'visible');
     if (day === null) return;
     const heading = Number(data.key.slice(5)) + '月' + day + '日';
-    tip.textContent = heading + (cumulative ? '累计支出 ¥' : '共支出 ¥') + cents(amounts[day - 1]) +
-      (cumulative ? (day <= prior.length ? ' · 上月同期 ¥' + cents(prior[day - 1]) : ' · 上月没有同日') : '');
+    tip.replaceChildren(heading + (cumulative ? '累计支出 ' : '共支出 '), moneyNode('span', '¥' + cents(amounts[day - 1]), 'expense'));
+    if (cumulative) {
+      if (day <= prior.length) tip.append(' · 上月同期 ', moneyNode('span', '¥' + cents(prior[day - 1]), 'expense'));
+      else tip.append(' · 上月没有同日');
+    }
     if (cumulative) {
       marker.setAttribute('cx', xAt(day - 1));
       marker.setAttribute('cy', yAt(amounts[day - 1]));
@@ -1268,6 +1333,7 @@ function renderMonthly(panel, data) {
   const months = Array.from({length:6}, (_, index) => index === 5 ? data : monthData(monthOffset(data.key, index - 5), exclude));
   const values = months.map(item => item.totals[metric]);
   const displayValue = value => metric === 'net' ? signed(value, cents) : cents(value);
+  const metricRole = value => metric === 'net' ? netRole(value) : metric;
   if (!months.some(item => item.included.some(t => t.type !== 'transfer' && (metric === 'net' || t.type === metric)))) {
     panel.append(element('p', '最近 6 个月没有可统计的' + label + '。', 'empty'));
     return months;
@@ -1286,8 +1352,8 @@ function renderMonthly(panel, data) {
     const plotted = y(value);
     const height = Math.max(value ? 3 : 1, Math.abs(plotted - baseline));
     const barTop = value < 0 ? baseline : baseline - height;
-    bar(svg, x - 15, barTop, 30, height, flowColor(metric), selected);
-    svg.append(svgNode('text', {x, y:barTop-5, 'text-anchor':'middle', class:'chart-value'},
+    bar(svg, x - 15, barTop, 30, height, metricRole(value), selected);
+    svg.append(svgNode('text', {x, y:barTop-5, 'text-anchor':'middle', class:'chart-value','data-money':metricRole(value)},
       metric === 'net' ? signed(value, compactAmount) : compactAmount(value)),
       svgNode('text', {x, y:165, 'text-anchor':'middle', class:selected ? 'chart-value' : ''},
         item.key.slice(2, 4) + '/' + item.key.slice(5)));
@@ -1302,8 +1368,9 @@ function renderMonthly(panel, data) {
   const plot = element('div', undefined, 'chart-plot');
   chart.figure.prepend(plot);
   plot.append(svg, hits);
-  caption(chart, '最近六个月' + label + '：' + months.map((item, index) =>
-    item.key + ' ¥' + displayValue(values[index])).join('、') + '。');
+  caption(chart, ['最近六个月' + label + '：', ...months.flatMap((item, index) => [
+    (index ? '、' : '') + item.key + ' ', moneyNode('span', '¥' + displayValue(values[index]), metricRole(values[index]))
+  ]), '。']);
   panel.append(chart.figure);
   return months;
 }
@@ -1311,7 +1378,7 @@ function renderAssets(panel) {
   panel.append(statTools('当前账户资产'));
   const amounts = balances();
   const accounts = state.accounts.map((account, index) => ({
-    name:account.name, amount:Math.round(amounts.get(account.id) * 100) / 100, color:chartColor(index)
+    name:account.name, amount:roundMoney(amounts.get(account.id)), index
   }));
   const positive = accounts.filter(row => row.amount > 0);
   const total = positive.reduce((sum, row) => sum + row.amount, 0);
@@ -1320,11 +1387,11 @@ function renderAssets(panel) {
     let used = 0;
     for (const row of positive) {
       const width = 350 * row.amount / total;
-      chart.svg.append(svgNode('rect', {x:used, y:2, width, height:18, fill:row.color}));
+      chart.svg.append(chartTone(svgNode('rect', {x:used, y:2, width, height:18, class:'asset-segment','data-money':'neutral'}), row.index));
       used += width;
     }
-    caption(chart, '正余额合计 ¥' + cents(total) + '：' + positive.map(row =>
-      row.name + ' ' + percent(row.amount, total)).join('、') + '。');
+    caption(chart, ['正余额合计 ', moneyNode('span', '¥' + cents(total)), '：' + positive.map(row =>
+      row.name + ' ' + percent(row.amount, total)).join('、') + '。']);
     panel.append(chart.figure);
   } else {
     panel.append(element('p', '暂无正余额可绘制资产构成。', 'empty'));
@@ -1332,11 +1399,13 @@ function renderAssets(panel) {
   for (const row of accounts) {
     const item = element('div', undefined, 'asset-row');
     const name = element('div');
-    const dot = element('span', undefined, 'asset-dot');
-    dot.style.backgroundColor = row.amount > 0 ? row.color : 'var(--line)';
-    name.append(dot, document.createTextNode(row.name),
-      element('small', row.amount < 0 ? '负余额' : total ? percent(row.amount, total) : '占比 —'));
-    item.append(name, element('b', '¥' + cents(row.amount), balanceStyle(row.amount)));
+    if (row.amount > 0) name.append(chartTone(moneyNode('span', undefined, 'neutral', 'asset-dot'), row.index));
+    name.append(document.createTextNode(row.name));
+    if (row.amount >= 0) name.append(element('small', total ? percent(row.amount, total) : '占比 —'));
+    const balance = element('div', undefined, 'asset-balance');
+    balance.append(moneyNode('b', '¥' + balanceAmount(row.amount)));
+    if (row.amount < 0) balance.append(balanceWarning());
+    item.append(name, balance);
     panel.append(item);
   }
 }
@@ -1356,7 +1425,8 @@ function renderStatistics(data = monthData(month, $('exclude-oneoff').checked)) 
     const skipped = range.reduce((sum, item) => ({
       count:sum.count + item.skipped.count, amount:sum.amount + item.skipped.amount
     }), {count:0, amount:0});
-    const note = element('p', '已排除 ' + skipped.count + ' 笔，共 ¥' + cents(skipped.amount), 'chart-note');
+    const note = element('p', '已排除 ' + skipped.count + ' 笔，共 ', 'chart-note');
+    note.append(moneyNode('span', '¥' + cents(skipped.amount), 'expense'));
     note.id = 'exclusion-note';
     const chart = panel.querySelector('.chart-figure');
     if (chart) chart.after(note);
