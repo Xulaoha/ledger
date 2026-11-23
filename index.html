@@ -107,6 +107,12 @@ label { display:grid; gap:4px; min-width:0 }
 }
 .tx { display:grid; grid-template-columns:minmax(0,1fr) auto 44px; align-items:center; gap:5px; padding:2px 0; overflow-wrap:anywhere }
 .tx.expense-row { grid-template-columns:minmax(0,1fr) auto 76px 44px }
+.tx.editable { grid-template-columns:minmax(0,1fr) 44px; cursor:pointer }
+.tx.editable.expense-row { grid-template-columns:minmax(0,1fr) 76px 44px }
+.tx-edit { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; align-self:stretch; gap:5px; min-width:0; border:0; padding:0; background:transparent; text-align:start }
+.tx-edit:focus-visible { outline-offset:0 }
+.tx-edit:active { background:var(--accbg) }
+@media (hover:hover) { .tx-edit:hover { background:var(--accbg) } }
 .tx .money { font-weight:600; max-width:min(25vw, 140px); text-align:right }
 .tx .tx-remove { color:var(--mute) }
 .tx small { display:block; color:var(--mute); font-size:13px }
@@ -326,7 +332,7 @@ legend { padding:0; margin-bottom:4px }
       <p class="status" id="backup-msg" role="status"></p>
     </div>
   </details>
-  <footer class="version" id="version">版本 2026-11-22 · 明细折叠</footer>
+  <footer class="version" id="version">版本 2026-11-23 · 编辑记录</footer>
 </main>
 
 <div class="fab-wrap"><button class="fab" type="button" id="open-entry" aria-label="记一笔" aria-haspopup="dialog">＋</button></div>
@@ -549,6 +555,8 @@ let savedScroll = 0;
 let toastTimer;
 let entryDay;
 let entryFollowsDay = false;
+let editingEntry;
+let addDraft;
 const pendingClears = new Set();
 const undoOrder = new Map();
 function savePrefs(changes) {
@@ -770,6 +778,7 @@ function toggleOneoff(t, container) {
 function transactionNodes(groups, container, showDate = true) {
   const accounts = new Map(state.accounts.map(a => [a.id, a.name]));
   const accountName = id => accounts.get(id) ?? '已删除账户';
+  const editable = container.id === 'list';
   return groups.map(([date, entries]) => {
     const group = element('div', undefined, 'day-group');
     if (showDate) {
@@ -786,30 +795,47 @@ function transactionNodes(groups, container, showDate = true) {
       const from = accountName(t.acc);
       const name = transfer ? '转账' : category;
       const account = transfer ? from + ' → ' + accountName(t.to) : from;
-      const title = element('div', t.note || name, 'tx-title');
+      const title = element('span', t.note || name, 'tx-title');
       title.append(element('small', t.note ? name + ' · ' + account : account));
-      row.append(title);
       const sign = t.type === 'income' ? '+' : t.type === 'expense' ? '−' : '';
       const amount = moneyNode('span', sign + money(Number(t.amt)), transfer ? 'neutral' : t.type);
-      row.append(amount);
+      if (editable) {
+        row.classList.add('editable');
+        const edit = element('button', undefined, 'tx-edit');
+        edit.type = 'button';
+        edit.dataset.txId = t.id;
+        edit.setAttribute('aria-haspopup', 'dialog');
+        edit.setAttribute('aria-label', `编辑记录：${t.note || name}，${account}，${amount.textContent}`);
+        edit.append(title, amount);
+        row.append(edit);
+        row.addEventListener('click', () => openEntry(t.date, false, t, edit));
+      } else {
+        row.append(title, amount);
+      }
       if (t.type === 'expense') {
         row.classList.add('expense-row');
-        const flag = button(isOneoff(t) ? '一次性 ✓' : '设为一次性', 'tx-flag', () => toggleOneoff(t, container));
+        const flag = button(isOneoff(t) ? '一次性 ✓' : '设为一次性', 'tx-flag', event => {
+          event.stopPropagation();
+          toggleOneoff(t, container);
+        });
         flag.dataset.money = 'neutral';
         flag.setAttribute('aria-label', isOneoff(t) ? '一次性 ✓，点击取消' : '设为一次性');
         flag.setAttribute('aria-pressed', String(isOneoff(t)));
         flag.dataset.txId = t.id;
         row.append(flag);
       }
-      const remove = button('×', 'icon quiet tx-remove', () => confirmAction('删除这笔记录', '确定删除这笔记录吗？账户余额会随之变化。', '确认删除', () => {
-        if (save({...state, tx:state.tx.filter(entry => entry !== t)})) {
-          renderLedger();
-          const focusId = {'today-list':'today-date', list:'list-title'}[container.id] ?? 'stat-panel';
-          $(focusId).focus({preventScroll:true});
-        } else {
-          showToast(storageError, true);
-        }
-      }));
+      const remove = button('×', 'icon quiet tx-remove', event => {
+        event.stopPropagation();
+        confirmAction('删除这笔记录', '确定删除这笔记录吗？账户余额会随之变化。', '确认删除', () => {
+          if (save({...state, tx:state.tx.filter(entry => entry !== t)})) {
+            renderLedger();
+            const focusId = {'today-list':'today-date', list:'list-title'}[container.id] ?? 'stat-panel';
+            $(focusId).focus({preventScroll:true});
+          } else {
+            showToast(storageError, true);
+          }
+        });
+      });
       remove.setAttribute('aria-label', '删除这笔');
       row.append(remove);
       group.append(row);
@@ -1528,9 +1554,12 @@ function renderEntry() {
   const accounts = state.accounts.map(a => ({value:a.id, label:a.name}));
   const selection = entrySelection[type];
   source = selection.account;
-  if (!accounts.some(a => a.value === source)) source = accounts[0]?.value;
-  if (!accounts.some(a => a.value === destination) || destination === source) {
-    destination = accounts.find(a => a.value !== source)?.value;
+  if (!accounts.some(a => a.value === source)) {
+    if (editingEntry?.type === type && source === editingEntry.acc && source !== undefined) {
+      accounts.push({value:source, label:'已删除账户'});
+    } else {
+      source = accounts[0]?.value;
+    }
   }
   const transfer = type === 'transfer';
   $('l-to').hidden = !transfer;
@@ -1542,11 +1571,21 @@ function renderEntry() {
   renderChoices('acc', accounts, source, value => { selection.account = value; });
   if (transfer) {
     const targets = accounts.filter(a => a.value !== source);
+    if (!targets.some(a => a.value === destination)) {
+      if (editingEntry?.type === 'transfer' && destination === editingEntry.to && destination !== undefined && destination !== source) {
+        targets.push({value:destination, label:'已删除账户'});
+      } else {
+        destination = targets[0]?.value;
+      }
+    }
     renderChoices('to', targets, destination, value => { destination = value; });
   } else {
-    const categories = type === 'income' ? INCOME : EXPENSE;
-    if (!categories.includes(selection.category)) selection.category = categories[0];
-    renderChoices('cat', categories.map(label => ({value:label,label})),
+    const categories = (type === 'income' ? INCOME : EXPENSE).map(label => ({value:label,label}));
+    if (editingEntry?.type === type && !categories.some(option => option.value === editingEntry.cat)) {
+      categories.push({value:editingEntry.cat, label:categoryName(editingEntry)});
+    }
+    if (!categories.some(option => option.value === selection.category)) selection.category = categories[0].value;
+    renderChoices('cat', categories,
       selection.category, value => { selection.category = value; });
     const hint = CATEGORY_HINTS.get(selection.category);
     $('category-hint').textContent = hint ?? '';
@@ -1574,7 +1613,7 @@ function setEntryDate(date, followsDay) {
 }
 $('date-today').addEventListener('click', () => {
   refreshDayBoundary();
-  setEntryDate(logicalToday, true);
+  setEntryDate(logicalToday, !editingEntry);
 });
 $('date-yesterday').addEventListener('click', () => {
   refreshDayBoundary();
@@ -1585,12 +1624,23 @@ $('open-entry').addEventListener('click', () => {
   refreshDayBoundary();
   openEntry(viewedDay, viewedDay === logicalToday);
 });
-function openEntry(date, followsDay) {
+function openEntry(date, followsDay, edit, trigger) {
   if (sheet.open) return;
+  editingEntry = edit;
   entrySelection = {expense:{...prefs.expense}, income:{...prefs.income}, transfer:{}};
-  destination = undefined;
+  if (edit) {
+    addDraft = {type, amount:$('amt').value, note:$('note').value, trigger};
+    type = edit.type;
+    for (const selection of Object.values(entrySelection)) selection.account = edit.acc;
+    entrySelection[type].category = edit.cat;
+    $('amt').value = edit.amt;
+    $('note').value = edit.note ?? '';
+  }
+  destination = edit?.to;
   setEntryDate(date, followsDay);
-  $('entry-oneoff').checked = false;
+  $('entry-oneoff').checked = !!edit && isOneoff(edit);
+  $('entry-title').textContent = edit ? '编辑记录' : '记一笔';
+  $('add').textContent = edit ? '保存修改' : '记下';
   savedScroll = window.scrollY;
   document.body.style.top = `-${savedScroll}px`;
   document.body.classList.add('sheet-open');
@@ -1608,7 +1658,15 @@ function closeEntry() {
   document.body.classList.remove('sheet-open');
   document.body.style.removeProperty('top');
   window.scrollTo(0, savedScroll);
-  $('open-entry').focus({preventScroll:true});
+  let returnFocus = $('open-entry');
+  if (addDraft) {
+    type = addDraft.type;
+    $('amt').value = addDraft.amount;
+    $('note').value = addDraft.note;
+    returnFocus = addDraft.trigger?.isConnected ? addDraft.trigger : $('list-title');
+  }
+  editingEntry = addDraft = undefined;
+  returnFocus.focus({preventScroll:true});
 }
 $('close-entry').addEventListener('click', closeEntry);
 sheet.addEventListener('cancel', event => {
@@ -1621,14 +1679,26 @@ sheet.addEventListener('click', event => {
   if (shadePress && event.target === sheet) closeEntry();
   shadePress = false;
 });
+function nextTransactionId() {
+  const ids = new Set(state.tx.map(t => String(t.id)));
+  for (const clear of pendingClears) {
+    for (const tx of clear.entries) ids.add(String(tx.id));
+  }
+  let id = Date.now();
+  while (ids.has(String(id))) id++;
+  return id;
+}
 $('entry-form').addEventListener('submit', event => {
   event.preventDefault();
   refreshDayBoundary();
-  const amount = Math.round(Number($('amt').value) * 100) / 100;
+  const edit = editingEntry;
+  const amountInput = $('amt');
+  const amount = roundMoney(Number(amountInput.value));
+  const keepAmount = edit && amountInput.value !== '' && Number(amountInput.value) === Number(edit.amt);
   const message = $('entry-msg');
-  if (!(amount > 0) || !Number.isFinite(amount)) {
+  if (!keepAmount && (!(amount > 0) || !Number.isFinite(amount))) {
     message.textContent = '请先填写大于 0 的金额。';
-    $('amt').focus();
+    amountInput.focus();
     return;
   }
   if (source === undefined) {
@@ -1640,21 +1710,33 @@ $('entry-form').addEventListener('submit', event => {
     return;
   }
   const date = $('date').value || entryDay;
-  const ids = new Set(state.tx.map(t => String(t.id)));
-  for (const clear of pendingClears) {
-    for (const tx of clear.entries) ids.add(String(tx.id));
+  const tx = {...edit, id:edit?.id ?? nextTransactionId(), date, type, amt:keepAmount ? edit.amt : amount, acc:source, note:$('note').value.trim()};
+  if (type === 'transfer') {
+    tx.to = destination;
+    delete tx.cat;
+  } else {
+    tx.cat = entrySelection[type].category;
+    delete tx.to;
   }
-  let id = Date.now();
-  while (ids.has(String(id))) id++;
-  const tx = {id, date, type, amt:amount, acc:source, note:$('note').value.trim()};
-  if (type === 'transfer') tx.to = destination;
-  else tx.cat = entrySelection[type].category;
   if (type === 'expense' && $('entry-oneoff').checked) tx.oneoff = true;
-  if (!save({...state, tx:[...state.tx, tx]})) {
+  else delete tx.oneoff;
+  const transactions = [...state.tx];
+  if (edit) {
+    // Imported ledgers can contain duplicate IDs. Also match the record that opened the sheet.
+    const index = transactions.findIndex(entry => entry.id === edit.id && entry === edit);
+    if (index < 0) {
+      message.textContent = '这笔记录已变更，请关闭后重新打开。';
+      return;
+    }
+    transactions[index] = tx;
+  } else {
+    transactions.push(tx);
+  }
+  if (!save({...state, tx:transactions})) {
     message.textContent = storageError;
     return;
   }
-  if (type !== 'transfer') {
+  if (!edit && type !== 'transfer') {
     savePrefs({[type]:{account:source, category:tx.cat}});
   }
   const entryMonth = date.slice(0, 7);
@@ -1666,10 +1748,16 @@ $('entry-form').addEventListener('submit', event => {
   }
   expandedDates ??= new Set();
   expandedDates.add(date);
-  $('amt').value = $('note').value = '';
+  if (!edit) $('amt').value = $('note').value = '';
   closeEntry();
   renderLedger();
-  showToast('已记下');
+  if (edit) {
+    const group = [...$('list').querySelectorAll('.day-toggle')].find(toggle => toggle.dataset.date === date);
+    const rows = group && $(group.getAttribute('aria-controls'));
+    const control = [...(rows?.querySelectorAll('.tx-edit') ?? [])].find(button => button.dataset.txId === String(tx.id));
+    (control ?? $('list-title')).focus({preventScroll:date === edit.date});
+  }
+  showToast(edit ? '已保存修改' : '已记下');
 });
 
 $('exp').addEventListener('click', () => {
