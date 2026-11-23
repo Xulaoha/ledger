@@ -127,6 +127,7 @@ details[open] > summary::after { transform:rotate(225deg); margin-bottom:0 }
 .managed-row:last-child { border-bottom:0; padding-bottom:0 }
 .managed-row label { overflow-wrap:anywhere }
 .actions { display:flex; flex-wrap:wrap; gap:8px }
+.backup-actions button { padding-inline:8px; font-size:14px; line-height:20px }
 .fab-wrap { position:fixed; bottom:var(--fab-gap); right:calc(var(--fab-gap) + env(safe-area-inset-right, 0px)); padding-bottom:env(safe-area-inset-bottom, 0px); z-index:2 }
 .fab { width:var(--fab-size); height:var(--fab-size); padding:0; border-radius:50%; font-size:28px; line-height:1 }
 .toast { position:fixed; z-index:3; bottom:calc(76px + env(safe-area-inset-bottom, 0px)); left:50%; transform:translateX(-50%); max-width:calc(100% - 24px); border-radius:8px; padding:8px 14px; color:var(--card); background:var(--ink); text-align:center; pointer-events:none }
@@ -328,11 +329,16 @@ legend { padding:0; margin-bottom:4px }
     <div class="settings-content">
       <p class="empty">账本数据保存在当前浏览器。换设备或清理浏览器前，请先生成并保存备份。</p>
       <textarea id="bk" aria-label="备份内容" spellcheck="false"></textarea>
-      <div class="actions"><button type="button" id="exp">生成备份</button><button type="button" id="imp">从上面的内容恢复</button></div>
+      <div class="actions backup-actions">
+        <button type="button" id="exp">生成备份</button>
+        <button type="button" id="imp">恢复备份</button>
+        <button type="button" id="select-backup" aria-label="全选备份文本" disabled>全选</button>
+        <button type="button" id="clear-backup" aria-label="清空备份文本" disabled>清空</button>
+      </div>
       <p class="status" id="backup-msg" role="status"></p>
     </div>
   </details>
-  <footer class="version" id="version">版本 2026-11-23 · 编辑记录</footer>
+  <footer class="version" id="version">版本 2026-11-23 · 备份交互</footer>
 </main>
 
 <div class="fab-wrap"><button class="fab" type="button" id="open-entry" aria-label="记一笔" aria-haspopup="dialog">＋</button></div>
@@ -1760,19 +1766,41 @@ $('entry-form').addEventListener('submit', event => {
   showToast(edit ? '已保存修改' : '已记下');
 });
 
+const backupInput = $('bk');
+function updateBackupTextActions() {
+  $('select-backup').disabled = $('clear-backup').disabled = demo || !backupInput.value;
+}
+function clearBackupText() {
+  backupInput.value = '';
+  updateBackupTextActions();
+}
+function selectBackupText() {
+  backupInput.focus();
+  backupInput.select();
+  backupInput.setSelectionRange(0, backupInput.value.length);
+}
+backupInput.addEventListener('input', updateBackupTextActions);
+$('select-backup').addEventListener('click', () => {
+  selectBackupText();
+  showStatus('backup-msg', '已全选，可以复制。');
+});
+$('clear-backup').addEventListener('click', () => {
+  if (document.activeElement === $('clear-backup')) $('exp').focus({preventScroll:true});
+  clearBackupText();
+  showStatus('backup-msg', '已清空备份文本。');
+});
 $('exp').addEventListener('click', () => {
   if (demo) return;
-  const backup = $('bk');
-  backup.value = JSON.stringify(state);
-  backup.focus();
-  backup.select();
+  backupInput.value = JSON.stringify(state);
+  updateBackupTextActions();
+  selectBackupText();
   showStatus('backup-msg', '备份已生成，可以复制保存。');
 });
 $('imp').addEventListener('click', () => {
   if (demo) return;
   let backup;
   try {
-    backup = JSON.parse($('bk').value);
+    backup = JSON.parse(backupInput.value);
     if (!isLedger(backup)) throw new Error();
   } catch {
     showStatus('backup-msg', '备份内容无法识别，请检查后再试。', true);
@@ -1783,6 +1811,7 @@ $('imp').addEventListener('click', () => {
       showStatus('backup-msg', storageError, true);
       return;
     }
+    clearBackupText();
     for (const clear of pendingClears) clear.remove();
     expandedDates = undefined;
     selectedSlice = selectedDay = null;
@@ -1820,9 +1849,11 @@ function setupPreferences() {
 }
 $('demo-banner').hidden = !demo;
 if (demo) {
-  $('exp').disabled = $('imp').disabled = $('bk').disabled = true;
+  $('exp').disabled = $('imp').disabled = backupInput.disabled = true;
   $('backup-msg').textContent = '演示模式下停用备份和恢复。';
 }
+updateBackupTextActions();
+window.addEventListener('pageshow', updateBackupTextActions);
 setupPreferences();
 renderLedger();
 renderManagement();
